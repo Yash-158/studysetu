@@ -1,0 +1,4 @@
+analytics:
+  stuck_alert_minutes: 5
+  misconception_cluster_threshold: 5
+  weekly_digest: { enabled: false }   # Phase 2 (needs email)

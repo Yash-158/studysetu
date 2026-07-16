@@ -1,0 +1,11 @@
+# Replace YOURDOMAIN after the name freeze (docs/BRANDING.md). Caddy auto-provisions TLS.
+app.CHANGE-ME {
+    root * /srv/site
+    encode gzip
+    try_files {path} /index.html
+    file_server
+}
+api.CHANGE-ME {
+    encode gzip
+    reverse_proxy api:8000
+}

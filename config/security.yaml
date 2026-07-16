@@ -1,0 +1,10 @@
+security:
+  assessment:
+    timer_enabled: true
+    autosave_seconds: 10
+    fullscreen_required: false
+    tab_switch_detection: warn   # off | warn | flag_to_teacher
+    copy_paste_block: false
+    right_click_block: false
+    max_tab_switches_before_flag: 3
+    webcam_check: false          # post-MVP, consent-gated

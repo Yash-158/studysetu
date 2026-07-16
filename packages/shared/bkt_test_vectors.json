@@ -1,0 +1,2 @@
+{ "_comment": "Populated in Phase 2. Each vector: params{L0,T,G,S}, sequence[bool], expected_p_known[]. Both bkt.ts and mastery.py must reproduce these to 6 decimals.",
+  "schema_version": 1, "vectors": [] }

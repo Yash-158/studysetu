@@ -1,0 +1,16 @@
+product: { name: "StudySetu", tagline: "A Personalized Learning Platform for Every Student.", org: "StudySetu" }
+branding:
+  colors: { primary: "#4F46E5", attention: "#F59E0B", mastery: "#10B981", danger: "#F43F5E", bg: "#FAFAF7", ink: "#1C1917" }
+  fonts: { body: "Lexend", display: "Space Grotesk" }
+features:
+  explore: true
+  explore_weekly_quota: 3
+  typed_doubts: true
+  self_serve_teacher_tier: true
+  mentor_guidance: true
+  # Phase 2 flags (built dark, flipped later)
+  ocr: false
+  offline_sync: false
+  ai_pregrade: false
+  syllabus_import: false
+locales: { enabled: [en, hi], default: en }

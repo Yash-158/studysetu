@@ -1,0 +1,6 @@
+auth:
+  jwt: { access_ttl_minutes: 30, refresh_ttl_days: 30, algorithm: HS256 }
+  activation: { code_length: 8, code_ttl_hours: 72 }
+  password: { min_length: 8 }
+  anomaly: { concurrent_session_flag: warn }   # off | warn | flag_to_teacher
+  session: { timeout_minutes: 60, inactivity_lock_minutes: 15 }

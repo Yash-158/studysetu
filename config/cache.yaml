@@ -1,0 +1,4 @@
+cache:
+  backend: memory                # memory | redis (future; same interface)
+  config_json_ttl_seconds: 300
+  dashboard_ttl_seconds: 30

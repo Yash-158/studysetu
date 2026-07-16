@@ -1,0 +1,12 @@
+.env
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.local-uploads/
+*.dump *.dump.gz
+.DS_Store
+apps/web/pnpm-lock.yaml.tmp

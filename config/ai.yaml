@@ -1,0 +1,16 @@
+ai:
+  embedding_dim: 768            # MUST match model + vector(768) columns (DATABASE.md)
+  chains:
+    item_bank:  [claude_sonnet, gemini_flash]
+    session:    [claude_sonnet, gemini_flash]
+    dialogue:   [claude_sonnet, gemini_flash, groq_llama]
+    fast_text:  [groq_llama, gemini_flash]
+    embeddings: [gemini_embed]
+    ocr:        [gemini_flash, claude_sonnet]   # dormant until features.ocr
+  models:
+    gemini_flash:  { model: "gemini-2.5-flash", timeout_s: 25 }
+    claude_sonnet: { model: "claude-sonnet-4-6", timeout_s: 40 }
+    groq_llama:    { model: "llama-3.3-70b-versatile", timeout_s: 10 }
+    gemini_embed:  { model: "gemini-embedding-001", timeout_s: 10 }
+  cache: { enabled: true, prompt_version: "v1", demo_mode: false }
+  quotas: { max_concurrent_calls: 4, per_institution_daily_tokens: 2000000 }

@@ -1,0 +1,28 @@
+name: deploy
+on: { push: { branches: [main] } }
+concurrency: production
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/studysetu-api:${{ github.sha }}
+      - name: Deploy to droplet
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /home/deploy/app
+            export TAG=${{ github.sha }}
+            bash deploy.sh
+      # Frontend: built + rsynced to droplet ./site at M1 when the web build exists (TODO in M1 prompt)

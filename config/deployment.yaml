@@ -1,0 +1,4 @@
+deployment:
+  domain: { app: "app.CHANGE-ME", api: "api.CHANGE-ME" }
+  cors_origins: ["https://app.CHANGE-ME", "http://localhost:5173"]
+  api_base_path: "/api"

@@ -1,0 +1,9 @@
+storage:
+  provider: local                # local | s3 | spaces (same StorageProvider interface)
+  upload_dir: /data/uploads
+  max_upload_mb: 10              # materials/submissions are bigger than v1 photos
+  retention:
+    doubt_photo_hours: 1         # TTL uploads (Phase 2)
+    submissions: permanent
+    materials: permanent
+  cleanup_interval_minutes: 15

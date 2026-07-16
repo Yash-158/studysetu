@@ -1,0 +1,11 @@
+# LOCAL stack: Postgres only; api/web run natively for hot reload.
+# Start: docker compose -f infra/docker-compose.dev.yml up -d
+name: studysetu
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: devpass, POSTGRES_DB: appdb }
+    ports: ["5432:5432"]
+    volumes: [pg_data_dev:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U app -d appdb"], interval: 5s, retries: 10 }
+volumes: { pg_data_dev: {} }

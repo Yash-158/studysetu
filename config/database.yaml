@@ -1,0 +1,5 @@
+database:            # non-secret knobs; DATABASE_URL itself lives in .env
+  pool: { min_size: 2, max_size: 10 }
+  echo_sql: false
+  bkt: { p_init: 0.3, p_learn: 0.15, p_guess: 0.2, p_slip: 0.1, mastery_threshold: 0.5 }
+  decay: { confidence_halflife_days: 42 }
