@@ -25,7 +25,9 @@ if ! wait_healthy api curl -fsS http://localhost:8000/healthz; then
   [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
   exit 1
 fi
-if ! wait_healthy web wget -q -O- http://localhost/; then
+# 127.0.0.1, not localhost: busybox wget in nginx:alpine resolves localhost to ::1 first, but the
+# read-only-mounted default.conf has no "listen [::]:80" so nginx only binds IPv4.
+if ! wait_healthy web wget -q -O- http://127.0.0.1/; then
   echo "web healthcheck FAILED - rolling back to ${PREV_TAG:-latest}"
   [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
   exit 1
