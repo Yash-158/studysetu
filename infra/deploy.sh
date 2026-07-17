@@ -8,13 +8,24 @@ PREV_TAG=$(cat .current_tag 2>/dev/null || echo "")
 docker compose pull
 TAG="${TAG:?TAG required}" docker compose up -d
 docker compose exec -T api bash -lc "cd /srv && bash scripts/migrate.sh"
-sleep 3
-if ! docker compose exec -T api curl -fsS http://localhost:8000/healthz >/dev/null; then
+
+# ponytail: fixed sleep raced a slow-starting api image and false-failed a healthy deploy;
+# poll instead of guessing a sleep duration, upgrade to a real readiness probe if this still flakes.
+wait_healthy() {
+  local svc="$1"; shift
+  for _ in $(seq 1 20); do
+    docker compose exec -T "$svc" "$@" >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  return 1
+}
+
+if ! wait_healthy api curl -fsS http://localhost:8000/healthz; then
   echo "healthcheck FAILED - rolling back to ${PREV_TAG:-latest}"
   [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
   exit 1
 fi
-if ! docker compose exec -T web wget -q -O- http://localhost/ >/dev/null; then
+if ! wait_healthy web wget -q -O- http://localhost/; then
   echo "web healthcheck FAILED - rolling back to ${PREV_TAG:-latest}"
   [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
   exit 1

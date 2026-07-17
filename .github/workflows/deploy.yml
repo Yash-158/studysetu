@@ -48,6 +48,24 @@ jobs:
           source: infra/nginx.conf
           target: /home/deploy/studysetu
           strip_components: 1
+      - name: Ship docker-compose.yml to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: infra/docker-compose.yml
+          target: /home/deploy/studysetu
+          strip_components: 1
+      - name: Ship deploy.sh to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: infra/deploy.sh
+          target: /home/deploy/studysetu
+          strip_components: 1
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
         with:
