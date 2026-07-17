@@ -22,6 +22,16 @@ services:
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U app -d appdb"], interval: 5s, retries: 10 }
     restart: unless-stopped
     # NO ports, NOT on "edge": Postgres reachable only on this project's own network (verify_server.sh enforces).
+  web:
+    # Static Vite build, rsynced into ./site by deploy.yml (M1: "build -> droplet ./site"). No
+    # Dockerfile/GHCR push needed - nginx:alpine + a bind-mounted directory + SPA-fallback config.
+    image: nginx:alpine
+    container_name: studysetu-web
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [edge]
+    restart: unless-stopped
 networks:
   edge:
     external: true

@@ -5,12 +5,17 @@
 set -euo pipefail
 cd /home/deploy/studysetu
 PREV_TAG=$(cat .current_tag 2>/dev/null || echo "")
-docker compose pull api
+docker compose pull
 TAG="${TAG:?TAG required}" docker compose up -d
 docker compose exec -T api bash -lc "cd /srv && bash scripts/migrate.sh"
 sleep 3
 if ! docker compose exec -T api curl -fsS http://localhost:8000/healthz >/dev/null; then
   echo "healthcheck FAILED - rolling back to ${PREV_TAG:-latest}"
+  [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
+  exit 1
+fi
+if ! docker compose exec -T web wget -q -O- http://localhost/ >/dev/null; then
+  echo "web healthcheck FAILED - rolling back to ${PREV_TAG:-latest}"
   [ -n "$PREV_TAG" ] && TAG="$PREV_TAG" docker compose up -d
   exit 1
 fi

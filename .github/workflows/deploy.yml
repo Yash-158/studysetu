@@ -17,6 +17,37 @@ jobs:
           file: apps/api/Dockerfile
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.lc }}/studysetu-api:${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: apps/web/pnpm-lock.yaml }
+      - name: Build web
+        run: |
+          cd apps/web
+          pnpm install --no-frozen-lockfile
+          pnpm build
+          mv dist ../../site   # stage at repo root: source: "site/*" + strip_components: 1 below
+                                # lands flat (index.html directly, no nested dist/) - mirrors the
+                                # documented distfiles/* pattern rather than guessing path depth
+                                # through apps/web/dist/*.
+      - name: Ship web build to droplet ./site
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "site/*"
+          target: /home/deploy/studysetu/site
+          strip_components: 1
+      - name: Ship nginx config to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: infra/nginx.conf
+          target: /home/deploy/studysetu
+          strip_components: 1
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
         with:
@@ -27,4 +58,3 @@ jobs:
             cd /home/deploy/studysetu
             export TAG=${{ github.sha }}
             bash deploy.sh
-      # Frontend: built + rsynced to droplet ./site at M1 when the web build exists (TODO in M1 prompt)
