@@ -259,6 +259,10 @@ class Settings:
             raise SystemExit(f"Invalid configuration in {cfg_dir}/*.yaml:\n{exc}") from exc
         self.database_url = os.environ.get("DATABASE_URL", "")
         self.jwt_secret = os.environ.get("JWT_SECRET", "")
+        self.smtp_host = os.environ.get("SMTP_HOST", "")
+        self.smtp_port = os.environ.get("SMTP_PORT", "")
+        self.smtp_user = os.environ.get("SMTP_USER", "")
+        self.smtp_password = os.environ.get("SMTP_PASSWORD", "")
 
     def _apply_env_overrides(self) -> None:
         for key, value in os.environ.items():

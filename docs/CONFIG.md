@@ -2,7 +2,7 @@
 Principle: if something can change, it changes in exactly one YAML file in config/: never in code.
 
 ## Layout (one file per subsystem)
-app.yaml (product, branding, feature flags, locales) · ai.yaml (chains, models, cache, quotas, embedding_dim) · auth.yaml (JWT TTLs, activation, anomaly policy, session) · database.yaml (pool, BKT params, decay) · storage.yaml (provider, dirs, retention) · logging.yaml · cache.yaml (memory|redis) · analytics.yaml (thresholds) · email.yaml (none|resend) · security.yaml (assessment integrity flags) · ocr.yaml + offline.yaml (Phase 2, pre-built) · deployment.yaml (domains, CORS).
+app.yaml (product, branding, feature flags, locales) · ai.yaml (chains, models, cache, quotas, embedding_dim) · auth.yaml (JWT TTLs, activation, anomaly policy, session) · database.yaml (pool, BKT params, decay) · storage.yaml (provider, dirs, retention) · logging.yaml · cache.yaml (memory|redis) · analytics.yaml (thresholds) · email.yaml (none|resend|gmail_smtp - gmail_smtp live as of M0, SMTP_HOST/PORT/USER/PASSWORD in .env; no sending code until M1) · security.yaml (assessment integrity flags) · ocr.yaml + offline.yaml (Phase 2, pre-built) · deployment.yaml (domains, CORS).
 
 ## Loading
 Backend: app/core/config.py merges config/*.yaml -> Settings; validates at boot (invalid = refuse to start). Frontend: fetches /config.json (secret-free projection: product, branding, features, locales); branding colors injected as CSS variables, so rebranding = editing app.yaml.

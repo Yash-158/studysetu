@@ -1,3 +1,5 @@
 email:
-  provider: none                 # none | resend (activation links fall back to teacher-issued codes)
+  provider: gmail_smtp           # none | resend | gmail_smtp - gmail_smtp is live in both local and production .env (SMTP_HOST/PORT/USER/PASSWORD)
   from: "StudySetu <no-reply@studysetu.caffeineclause.tech>"
+  # Config-only: no email-SENDING code exists yet. Activation flow (M1's auth module) is the first consumer;
+  # until then, activation links fall back to teacher-issued codes regardless of this provider value.

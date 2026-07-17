@@ -1,7 +1,7 @@
 # ROADMAP.md - Milestones (checkboxes are the project's progress bar)
 Each milestone = one PROMPTS.md implementation prompt = one branch = one gate. Order is dependency-true; no milestone requires rewriting a previous one.
 
-- [ ] **M0 Foundation online**: local stack boots, migrations applied (CI migration job green), /healthz + /config.json live locally AND on the droplet via CD, verify scripts pass. GATE: one-line change live on api.<domain> in <5 min.
+- [x] **M0 Foundation online**: local stack boots, migrations applied (CI migration job green), /healthz + /config.json live locally AND on the droplet via CD, verify scripts pass. GATE: one-line change live on api.<domain> in <5 min.
 - [ ] **M1 Identity & shells**: auth (activation flow, login, JWT+refresh, roles), role-routed app shells (student/teacher/admin), landing page, logging+Sentry wired, frontend deploy step added to CD. GATE: three seeded users log in and see their shells on the real domain.
 - [ ] **M2 Institution, pools, people**: admin CRUD for teachers/students (CSV import), pools + members, activation issuance, self-serve teacher tier. GATE: import 10 students -> pool -> all can activate and log in.
 - [ ] **M3 Curriculum**: subjects, chapters, topics, ordered blocks (reorder), topic_edges (teacher links), materials upload (StorageProvider) + text-PDF extraction, publish flow, pool attach with snapshot+delta + "new members" banner. GATE: Anvi builds DIP with 2 chapters and publishes; Yash sees it.
