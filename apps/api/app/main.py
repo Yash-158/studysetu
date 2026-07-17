@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.modules import auth as auth_module
 
 def create_app() -> FastAPI:
     setup_logging()
@@ -26,7 +27,7 @@ def create_app() -> FastAPI:
         """Runtime config for the frontend: branding, features, locales. Secrets never pass here."""
         return settings.public()
 
-    # TODO(M1): mount app.modules.auth.router
+    app.include_router(auth_module.router)
     # TODO(M2): mount app.modules.institutions.router
     # TODO(M3): mount app.modules.curriculum.router
     # TODO(M4): mount app.modules.assessment.router

@@ -10,3 +10,6 @@ __pycache__/
 *.dump *.dump.gz
 .DS_Store
 apps/web/pnpm-lock.yaml.tmp
+*.tsbuildinfo
+e2e/test-results/
+e2e/playwright-report/
