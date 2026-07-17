@@ -22,7 +22,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            cd /home/deploy/app
+            cd /home/deploy/studysetu
             export TAG=${{ github.sha }}
             bash deploy.sh
       # Frontend: built + rsynced to droplet ./site at M1 when the web build exists (TODO in M1 prompt)

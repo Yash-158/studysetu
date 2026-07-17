@@ -21,22 +21,23 @@ hdr "2. Docker stack"
 command -v docker >/dev/null && ok "Docker" || bad "Docker" "install"
 docker compose version >/dev/null 2>&1 && ok "Compose" || bad "Compose" "plugin missing"
 docker info >/dev/null 2>&1 && ok "Docker without sudo" || bad "Docker perms" "usermod -aG docker deploy"
-cd /home/deploy/app 2>/dev/null || { bad "~/app" "missing app dir"; }
+docker network inspect edge >/dev/null 2>&1 && ok "edge network exists" || bad "edge network" "docker network create edge (see infra/droplet-bootstrap.sh)"
+cd /home/deploy/studysetu 2>/dev/null || { bad "~/studysetu" "missing app dir"; }
 if docker compose ps --format '{{.Service}}' 2>/dev/null | grep -q postgres; then
   docker compose exec -T postgres pg_isready -U app >/dev/null 2>&1 && ok "Postgres ready" || bad "Postgres" "not ready"
   N=$(docker compose exec -T postgres psql -U app -d appdb -tAc "SELECT count(*) FROM schema_migrations" 2>/dev/null | tr -d '[:space:]')
   [ "${N:-0}" -ge 6 ] 2>/dev/null && ok "Migrations applied ($N)" || warn "Migrations" "will apply on first deploy"
 else warn "Postgres" "stack not up yet (pre-first-deploy)"; fi
-docker compose ps --format '{{.Service}}' 2>/dev/null | grep -q caddy && ok "Caddy running" || warn "Caddy" "not up yet"
 ss -tlnp 2>/dev/null | grep -q ":5432 " && bad "Postgres exposure" "5432 public - must stay internal" || ok "Postgres not exposed"
-curl -fsS -m 5 http://localhost:8000/healthz >/dev/null 2>&1 && ok "API /healthz" || warn "API health" "not up yet"
+ss -tlnp 2>/dev/null | grep -qE ":80 |:443 " && bad "Ports 80/443" "must NOT be bound by this stack - owned by caffeineclause-edge" || ok "No 80/443 bound by this stack"
+docker compose exec -T api curl -fsS -m 5 http://localhost:8000/healthz >/dev/null 2>&1 && ok "API /healthz (in-container)" || warn "API health" "not up yet"
 
 hdr "3. Volumes, env, backups"
-for v in studysetu_pg_data studysetu_uploads_data studysetu_backups_data studysetu_caddy_data; do
+for v in studysetu_pg_data studysetu_uploads_data studysetu_backups_data; do
   docker volume inspect "$v" >/dev/null 2>&1 && ok "volume $v" || warn "volume $v" "created on first compose up"; done
-if [ -f /home/deploy/app/.env ]; then P=$(stat -c %a /home/deploy/app/.env); [ "$P" -le 640 ] && ok ".env perms $P" || warn ".env" "chmod 600"
-  for k in DATABASE_URL JWT_SECRET POSTGRES_PASSWORD; do grep -q "^$k=..\+" /home/deploy/app/.env && ok "env $k set" || bad "env $k" "empty in .env"; done
-else bad ".env" "place /home/deploy/app/.env"; fi
+if [ -f /home/deploy/studysetu/.env ]; then P=$(stat -c %a /home/deploy/studysetu/.env); [ "$P" -le 640 ] && ok ".env perms $P" || warn ".env" "chmod 600"
+  for k in DATABASE_URL JWT_SECRET POSTGRES_PASSWORD; do grep -q "^$k=..\+" /home/deploy/studysetu/.env && ok "env $k set" || bad "env $k" "empty in .env"; done
+else bad ".env" "place /home/deploy/studysetu/.env"; fi
 ls /var/lib/docker/volumes/studysetu_backups_data/_data/appdb_*.dump.gz >/dev/null 2>&1 && ok "Backups exist" || warn "Backups" "cron not run yet (scripts/backup_db.sh)"
 crontab -l 2>/dev/null | grep -q backup_db && ok "Backup cron installed" || warn "Backup cron" "install nightly backup_db.sh"
 
