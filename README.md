@@ -12,7 +12,7 @@ The teacher teaches. StudySetu makes sure it stuck: for every single student. An
 | packages/shared | OpenAPI-generated types + BKT test vectors |
 | db/migrations | Canonical SQL schema (validated) + scripts/migrate.sh |
 | config/ | Per-subsystem YAML configuration (nothing hardcoded) |
-| infra/ | docker-compose (dev+prod), Caddyfile, deploy.sh |
+| infra/ | docker-compose (dev+prod), Caddyfile (reference only - live reverse-proxy is the separate caffeineclause-edge repo, ADR-011), deploy.sh, droplet-bootstrap.sh |
 | prompts/ | Versioned LLM prompt files |
 | scripts/ | migrate, seed, backup, verify_local, verify_server |
 | .github/workflows | CI (lint/test/migration-check) + CD (build->GHCR->droplet) |

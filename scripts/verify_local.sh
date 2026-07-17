@@ -42,6 +42,7 @@ if docker compose -f infra/docker-compose.dev.yml ps --format '{{.Service}}' 2>/
   [ "${N:-0}" -ge 6 ] 2>/dev/null && ok "Migrations applied ($N)" || warn "Migrations" "run: bash scripts/migrate.sh"
 else warn "Postgres" "not running: docker compose -f infra/docker-compose.dev.yml up -d"; fi
 curl -fsS -m 3 http://localhost:8000/healthz >/dev/null 2>&1 && ok "Backend /healthz" || warn "Backend" "not running (fine when not developing): uv run uvicorn app.main:app --reload in apps/api"
+curl -fsS -m 3 http://localhost:8000/config.json >/dev/null 2>&1 && ok "Backend /config.json" || warn "Backend /config.json" "not running, or config failed pydantic validation (check uvicorn output)"
 curl -fsS -m 3 http://localhost:5173 >/dev/null 2>&1 && ok "Frontend dev server" || warn "Frontend" "not running: pnpm -C apps/web dev"
 
 hdr "RESULT"

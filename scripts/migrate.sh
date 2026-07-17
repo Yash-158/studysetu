@@ -3,7 +3,7 @@
 # Usage: DATABASE_URL=postgres://... scripts/migrate.sh   (defaults to the dev docker compose postgres)
 set -euo pipefail
 run_psql() {
-  if [ -n "${DATABASE_URL:-}" ]; then psql "$DATABASE_URL" "$@";
+  if [ -n "${DATABASE_URL:-}" ]; then psql "${DATABASE_URL/+asyncpg/}" "$@";
   else docker compose -f infra/docker-compose.dev.yml exec -T postgres psql -U app -d appdb "$@"; fi
 }
 run_psql -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS schema_migrations (filename text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());"

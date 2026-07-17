@@ -1,6 +1,8 @@
 # SETUP_STEPS.md - From Empty Windows 11 Laptop to Ready-to-Code
 The definitive pre-implementation guide. Follow top to bottom. Every step says WHAT, WHY in plain language, WHY NOW, and the exact commands. When this document is complete, Phase 0 of PHASES.md is done and feature work may begin.
 
+> **Amendment (M0 domain integration, current):** this is retained as historical/onboarding narrative (predates the product name freeze and the multi-project droplet decision). Where this doc describes Caddy living inside this project's compose, or a `~/app` deploy path, or a placeholder domain: those are superseded by docs/DEPLOYMENT.md, docs/ARCHITECTURE.md ADR-011, and infra/droplet-bootstrap.sh. Current facts: domain `caffeineclause.tech` (flat subdomains `studysetu.` / `studysetu-api.`), droplet 64.227.177.181, deploy path `/home/deploy/studysetu`, shared edge layer in the separate `caffeineclause-edge` repo.
+
 Companion documents: README_BIBLE.md (decisions and rationale), CLAUDE.md (Claude Code behavior), docs/PHASES.md (what happens after this guide).
 
 ---

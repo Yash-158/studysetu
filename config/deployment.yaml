@@ -1,4 +1,5 @@
 deployment:
-  domain: { app: "app.CHANGE-ME", api: "api.CHANGE-ME" }
-  cors_origins: ["https://app.CHANGE-ME", "http://localhost:5173"]
+  domain: { app: "studysetu.caffeineclause.tech", api: "studysetu-api.caffeineclause.tech" }
+  cors_origins: ["https://studysetu.caffeineclause.tech", "http://localhost:5173"]
+  api_base_url: "https://studysetu-api.caffeineclause.tech"   # frontend build-time knob, see apps/web/.env.production
   api_base_path: "/api"

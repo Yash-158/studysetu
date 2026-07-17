@@ -1,11 +1,18 @@
-# Replace YOURDOMAIN after the name freeze (docs/BRANDING.md). Caddy auto-provisions TLS.
-app.CHANGE-ME {
-    root * /srv/site
+# REFERENCE ONLY — NOT executed by this repo's compose. HTTPS/reverse-proxy is a layer shared
+# across every caffeineclause team project, living in the separate ../caffeineclause-edge repo
+# (docs/ARCHITECTURE.md ADR-011). This block is studysetu's contribution: copy it verbatim into
+# that repo's Caddyfile. Both containers join the external "edge" Docker network (see
+# infra/docker-compose.yml); Caddy reaches them by container name, not by port on the host.
+#
+# Subdomains are FLAT (one label under caffeineclause.tech), not nested: the team's wildcard DNS
+# record only matches one label deep, so api.studysetu.caffeineclause.tech would not resolve.
+
+studysetu.caffeineclause.tech {
     encode gzip
-    try_files {path} /index.html
-    file_server
+    reverse_proxy studysetu-web:80   # TODO(M1): static-site container, added when frontend deploy lands
 }
-api.CHANGE-ME {
+
+studysetu-api.caffeineclause.tech {
     encode gzip
-    reverse_proxy api:8000
+    reverse_proxy studysetu-api:8000
 }

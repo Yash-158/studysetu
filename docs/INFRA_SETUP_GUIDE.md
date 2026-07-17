@@ -1,6 +1,8 @@
 # INFRA_SETUP_GUIDE.md - Zero-to-Ready Onboarding Manual (v2)
 From an empty Windows 11 laptop to a fully configured development environment and cloud infrastructure. Every step follows the same five-part structure: Objective, Why required, Can I customize, Implementation, Common mistakes. Follow top to bottom; do not skip verification lines.
 
+> **Amendment (M0 domain integration, current):** this droplet (64.227.177.181) now hosts multiple team projects behind ONE shared Caddy layer living in the separate `caffeineclause-edge` repo, not inside this project's compose (docs/ARCHITECTURE.md ADR-011). Domain is claimed: `caffeineclause.tech`, flat subdomains `studysetu.` (frontend) / `studysetu-api.` (backend). Deploy path is `/home/deploy/studysetu`, not `~/app`. Sections 8-9 below (droplet provisioning, domain/DNS) are retained as the general playbook for provisioning a NEW droplet or domain from scratch; for THIS droplet, docs/DEPLOYMENT.md + infra/droplet-bootstrap.sh are the current source of truth.
+
 ## THE NAMING RULE (read before anything else)
 Infrastructure names are GENERIC and permanent; the product name is branding and lives ONLY in `config/app.yaml`, UI copy, and docs. This means renaming the product later touches one YAML block, zero cloud resources. Fixed infrastructure names used throughout this guide:
 

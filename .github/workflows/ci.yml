@@ -19,7 +19,7 @@ jobs:
         with: { node-version: 22, cache: pnpm, cache-dependency-path: apps/web/pnpm-lock.yaml }
       - run: cd apps/web && pnpm install --no-frozen-lockfile
       - run: cd apps/web && pnpm typecheck
-      - run: cd apps/web && pnpm test --passWithNoTests
+      - run: cd apps/web && pnpm run test --passWithNoTests
   migrations:
     runs-on: ubuntu-latest
     services:
