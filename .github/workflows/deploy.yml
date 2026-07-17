@@ -7,6 +7,8 @@ jobs:
     permissions: { contents: read, packages: write }
     steps:
       - uses: actions/checkout@v4
+      - id: owner
+        run: echo "lc=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
       - uses: docker/build-push-action@v6
@@ -14,7 +16,7 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/studysetu-api:${{ github.sha }}
+          tags: ghcr.io/${{ steps.owner.outputs.lc }}/studysetu-api:${{ github.sha }}
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
         with:
