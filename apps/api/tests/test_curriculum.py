@@ -19,7 +19,7 @@ pytestmark = [
 ]
 
 import app.core.db as db_module  # noqa: E402
-from app.core.db import Institution, Pool, PoolMember, SessionLocal, User  # noqa: E402
+from app.core.db import Institution, Pool, PoolMember, SessionLocal, SubjectEnrollment, User  # noqa: E402
 from app.core.security import hash_secret  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -372,3 +372,131 @@ async def test_unenrolled_student_cannot_see_subject(client: AsyncClient):
 
     res = await client.get(f"/api/curriculum/student/subjects/{subject['id']}", headers=_auth(student_token))
     assert res.status_code == 404
+
+
+# --- Audit tests (independent verification pass, written fresh against the real implementation,
+# not a re-assertion of the tests above): break-it-to-prove-it discipline on the two areas most
+# likely to have subtle correctness issues - the publish cascade and the pool sync/banner logic.
+
+async def test_audit_student_sees_only_published_chapter_not_draft_siblings_content(client: AsyncClient):
+    """Two chapters, publish ONLY the first. The student read path must return chapter 1's content
+    and must not leak chapter 2's title, topic title, or block at all - checked structurally AND
+    against the raw response body text (belt+suspenders against any accidental leak)."""
+    slug = await _create_institution()
+    _, token = await _teacher(client, slug)
+    student_identifier = await _create_user(slug, "student")
+    student_token = await _login(client, slug, student_identifier)
+
+    subject = (await client.post("/api/curriculum/subjects", json={"name": "S"}, headers=_auth(token))).json()
+    ch1 = (await client.post(f"/api/curriculum/subjects/{subject['id']}/chapters", json={"title": "Chapter One"}, headers=_auth(token))).json()
+    ch2 = (await client.post(f"/api/curriculum/subjects/{subject['id']}/chapters", json={"title": "Chapter Two DRAFT"}, headers=_auth(token))).json()
+
+    topic1 = (await client.post(f"/api/curriculum/subjects/{subject['id']}/topics", json={"title": "Topic One"}, headers=_auth(token))).json()
+    topic2 = (await client.post(f"/api/curriculum/subjects/{subject['id']}/topics", json={"title": "Topic Two Secret"}, headers=_auth(token))).json()
+
+    await client.post(f"/api/curriculum/chapters/{ch1['id']}/blocks", json={"block_type": "topic", "topic_id": topic1["id"]}, headers=_auth(token))
+    await client.post(f"/api/curriculum/chapters/{ch2['id']}/blocks", json={"block_type": "topic", "topic_id": topic2["id"]}, headers=_auth(token))
+
+    async with SessionLocal() as db:
+        institution = (await db.execute(select(Institution).where(Institution.slug == slug))).scalar_one()
+        pool = Pool(id=uuid.uuid4(), institution_id=institution.id, name="P")
+        db.add(pool)
+        await db.flush()
+        student_row = (await db.execute(select(User).where(User.email == student_identifier))).scalar_one()
+        db.add(PoolMember(pool_id=pool.id, user_id=student_row.id))
+        await db.commit()
+        pool_id = str(pool.id)
+    await client.post(f"/api/curriculum/subjects/{subject['id']}/pools/{pool_id}/attach", headers=_auth(token))
+
+    # publish ONLY chapter 1 - chapter 2 stays draft
+    publish_res = await client.post(f"/api/curriculum/chapters/{ch1['id']}/publish", headers=_auth(token))
+    assert publish_res.status_code == 200
+
+    detail = await client.get(f"/api/curriculum/student/subjects/{subject['id']}", headers=_auth(student_token))
+    assert detail.status_code == 200
+    body = detail.json()
+
+    chapter_titles = [c["title"] for c in body["chapters"]]
+    assert chapter_titles == ["Chapter One"], f"expected only the published chapter, got {chapter_titles}"
+
+    topic_titles_seen = [
+        block["topic"]["title"]
+        for chapter in body["chapters"]
+        for block in chapter["blocks"]
+        if block["block_type"] == "topic"
+    ]
+    assert topic_titles_seen == ["Topic One"]
+    assert "Topic Two Secret" not in topic_titles_seen
+
+    # raw-text check: the draft chapter/topic must not appear ANYWHERE in the response body,
+    # not just be absent from the fields this test happens to inspect.
+    assert "Chapter Two DRAFT" not in detail.text
+    assert "Topic Two Secret" not in detail.text
+
+
+async def test_audit_sync_pool_does_not_resurrect_archived_member(client: AsyncClient):
+    """Attach a pool with 2 students, remove one via remove_enrollment (archived, not deleted),
+    call sync_pool() again, confirm the removed student stays archived - not silently re-enrolled -
+    while the still-active student is left untouched. Checked via the API roster AND a direct DB
+    read of the subject_enrollments row (status + archived_at), not just the roster projection."""
+    slug = await _create_institution()
+    _, token = await _teacher(client, slug)
+    subject = (await client.post("/api/curriculum/subjects", json={"name": "S"}, headers=_auth(token))).json()
+
+    async with SessionLocal() as db:
+        institution = (await db.execute(select(Institution).where(Institution.slug == slug))).scalar_one()
+        pool = Pool(id=uuid.uuid4(), institution_id=institution.id, name="P")
+        db.add(pool)
+        await db.flush()
+        pool_id = str(pool.id)
+        await db.commit()
+
+    student_a = await _create_user(slug, "student")
+    student_b = await _create_user(slug, "student")
+    async with SessionLocal() as db:
+        a = (await db.execute(select(User).where(User.email == student_a))).scalar_one()
+        b = (await db.execute(select(User).where(User.email == student_b))).scalar_one()
+        db.add(PoolMember(pool_id=uuid.UUID(pool_id), user_id=a.id))
+        db.add(PoolMember(pool_id=uuid.UUID(pool_id), user_id=b.id))
+        await db.commit()
+        student_a_id, student_b_id = str(a.id), str(b.id)
+
+    attach = await client.post(f"/api/curriculum/subjects/{subject['id']}/pools/{pool_id}/attach", headers=_auth(token))
+    assert attach.json()["attached"] == 2
+
+    removed = await client.delete(f"/api/curriculum/subjects/{subject['id']}/enrollments/{student_a_id}", headers=_auth(token))
+    assert removed.status_code == 200
+
+    roster_after_remove = (await client.get(f"/api/curriculum/subjects/{subject['id']}/enrollments", headers=_auth(token))).json()
+    assert [m["id"] for m in roster_after_remove] == [student_b_id]
+
+    async with SessionLocal() as db:
+        enrollment_a = (
+            await db.execute(
+                select(SubjectEnrollment).where(
+                    SubjectEnrollment.subject_id == uuid.UUID(subject["id"]), SubjectEnrollment.user_id == uuid.UUID(student_a_id)
+                )
+            )
+        ).scalar_one_or_none()
+        assert enrollment_a is not None, "removal must archive the row, never delete it"
+        assert enrollment_a.status == "archived"
+        assert enrollment_a.archived_at is not None
+
+    # the pool is unchanged (both members still there) - sync must not re-add student A
+    sync = await client.post(f"/api/curriculum/subjects/{subject['id']}/pools/{pool_id}/sync", headers=_auth(token))
+    assert sync.status_code == 200
+    assert sync.json()["added"] == 0, "sync must not resurrect the deliberately-removed student"
+
+    roster_after_sync = (await client.get(f"/api/curriculum/subjects/{subject['id']}/enrollments", headers=_auth(token))).json()
+    assert [m["id"] for m in roster_after_sync] == [student_b_id]
+
+    async with SessionLocal() as db:
+        enrollment_a_after = (
+            await db.execute(
+                select(SubjectEnrollment).where(
+                    SubjectEnrollment.subject_id == uuid.UUID(subject["id"]), SubjectEnrollment.user_id == uuid.UUID(student_a_id)
+                )
+            )
+        ).scalar_one_or_none()
+        assert enrollment_a_after is not None
+        assert enrollment_a_after.status == "archived", "sync must not silently flip the archived row back to active"
