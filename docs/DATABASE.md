@@ -1,6 +1,8 @@
 # DATABASE.md - StudySetu Canonical Schema (FINAL, validated)
 Source of truth for the database. Implemented exactly by db/migrations/0001-0006, which were applied against a live PostgreSQL 16 + pgvector instance with zero errors (32 tables) and constraint-tested (scope checks, block exclusivity, one-correct-option, event idempotency key). Schema changes: edit here -> new forward-only migration -> MEMORY.md entry. Never edit an applied migration.
 
+**0007 (M2):** `users.issued_at timestamptz not null default now()`, backfilled from `created_at` for pre-existing rows. Activation-code TTL (`modules/auth.py`) is measured from `issued_at`, not `created_at` - this was a known M1 gap (see MEMORY.md) that broke once M2's reissue-code flow needed to set a fresh TTL clock on an already-existing account independent of when it was first created.
+
 ## 1. ER Diagram
 ```mermaid
 erDiagram

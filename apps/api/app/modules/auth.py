@@ -92,11 +92,8 @@ async def activate(body: ActivateRequest, db: AsyncSession = Depends(get_db)) ->
     if user is None or user.status != "invited" or not verify_secret(body.activation_code, user.activation_code_hash):
         raise generic_error
 
-    # ponytail: TTL measured from created_at (no issued_at column exists yet). Good enough while
-    # activation codes are only ever set at account-creation time; M2's reissue flow should add a
-    # dedicated issued_at column once codes can be reissued independently of creation.
     ttl_hours = settings.get("auth", "activation", "code_ttl_hours", default=72)
-    if datetime.now(timezone.utc) - user.created_at > timedelta(hours=ttl_hours):
+    if datetime.now(timezone.utc) - user.issued_at > timedelta(hours=ttl_hours):
         raise generic_error
 
     min_length = settings.get("auth", "password", "min_length", default=8)

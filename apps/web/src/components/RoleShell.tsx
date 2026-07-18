@@ -7,7 +7,15 @@ import { Button } from './Button'
 import { useAuth } from '../lib/auth'
 import { getConfig } from '../lib/config'
 
-export function RoleShell({ roleLabel, children }: { roleLabel: string; children?: ReactNode }) {
+export function RoleShell({
+  roleLabel,
+  children,
+  wide = false,
+}: {
+  roleLabel: string
+  children?: ReactNode
+  wide?: boolean
+}) {
   const navigate = useNavigate()
   const user = useAuth((s) => s.user)
   const logout = useAuth((s) => s.logout)
@@ -30,7 +38,7 @@ export function RoleShell({ roleLabel, children }: { roleLabel: string; children
           </Button>
         </span>
       </header>
-      <div className="ss-container">
+      <div className={wide ? 'ss-container-wide' : 'ss-container'}>
         {children ?? <p>Your {roleLabel} shell will grow here starting M2.</p>}
       </div>
     </div>
