@@ -7,3 +7,5 @@ storage:
     submissions: permanent
     materials: permanent
   cleanup_interval_minutes: 15
+  materials:
+    min_extractable_chars: 40    # below this, a "readable" PDF's text is treated as scanned/unreliable -> stored_only

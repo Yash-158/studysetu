@@ -7,9 +7,9 @@ import json
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -17,6 +17,17 @@ from app.core.config import settings
 
 user_role_enum = PgEnum("admin", "teacher", "student", name="user_role", create_type=False)
 account_status_enum = PgEnum("invited", "active", "disabled", name="account_status", create_type=False)
+publish_status_enum = PgEnum("draft", "published", "archived", name="publish_status", create_type=False)
+enrollment_status_enum = PgEnum("active", "archived", name="enrollment_status", create_type=False)
+topic_kind_enum = PgEnum("subject", "explore", name="topic_kind", create_type=False)
+block_type_enum = PgEnum("topic", "assessment", name="block_type", create_type=False)
+edge_origin_enum = PgEnum("implicit", "teacher", "ai_suggested", name="edge_origin", create_type=False)
+material_kind_enum = PgEnum("pdf", "note", "link", "image", name="material_kind", create_type=False)
+material_owner_enum = PgEnum("subject", "chapter", "topic", name="material_owner", create_type=False)
+readability_enum = PgEnum("readable", "stored_only", name="readability", create_type=False)
+gating_mode_enum = PgEnum("open", "recommended", "locked", name="gating_mode", create_type=False)
+feedback_mode_enum = PgEnum("instant", "end", "after_deadline", name="feedback_mode", create_type=False)
+upload_purpose_enum = PgEnum("material", "submission", "doubt_photo", name="upload_purpose", create_type=False)
 
 
 class Base(DeclarativeBase):
@@ -65,6 +76,133 @@ class PoolMember(Base):
     pool_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("pools.id"), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Subject(Base):
+    __tablename__ = "subjects"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    institution_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("institutions.id"))
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    name: Mapped[str] = mapped_column(String)
+    code: Mapped[str | None] = mapped_column(String)
+    term: Mapped[str | None] = mapped_column(String)
+    status: Mapped[str] = mapped_column(publish_status_enum, default="draft")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SubjectStaff(Base):
+    __tablename__ = "subject_staff"
+
+    subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+
+
+class SubjectEnrollment(Base):
+    __tablename__ = "subject_enrollments"
+
+    subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    source_pool_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("pools.id"))
+    status: Mapped[str] = mapped_column(enrollment_status_enum, default="active")
+    enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Chapter(Base):
+    __tablename__ = "chapters"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"))
+    title: Mapped[str] = mapped_column(String)
+    position: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(publish_status_enum, default="draft")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Topic(Base):
+    __tablename__ = "topics"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    kind: Mapped[str] = mapped_column(topic_kind_enum, default="subject")
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"))
+    title: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, default="")
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ChapterBlock(Base):
+    __tablename__ = "chapter_blocks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    chapter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("chapters.id"))
+    position: Mapped[int] = mapped_column(Integer)
+    block_type: Mapped[str] = mapped_column(block_type_enum)
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    assessment_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("assessments.id"))
+
+
+class TopicEdge(Base):
+    __tablename__ = "topic_edges"
+
+    src_topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"), primary_key=True)
+    dst_topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"), primary_key=True)
+    origin: Mapped[str] = mapped_column(edge_origin_enum, default="teacher")
+    weight: Mapped[float] = mapped_column(default=1.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Material(Base):
+    __tablename__ = "materials"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    owner_type: Mapped[str] = mapped_column(material_owner_enum)
+    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    kind: Mapped[str] = mapped_column(material_kind_enum)
+    title: Mapped[str] = mapped_column(String)
+    url: Mapped[str | None] = mapped_column(String)
+    upload_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("uploads.id"))
+    extracted_text: Mapped[str | None] = mapped_column(String)
+    readability: Mapped[str] = mapped_column(readability_enum, default="stored_only")
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Assessment(Base):
+    """Minimal placeholder shell for chapter_blocks (M3 scope: title + defaults only).
+    Taking/grading/gating UI is M7 territory - this table's fuller use starts then."""
+    __tablename__ = "assessments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    subject_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"))
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    title: Mapped[str] = mapped_column(String)
+    gating: Mapped[str] = mapped_column(gating_mode_enum, default="recommended")
+    feedback: Mapped[str] = mapped_column(feedback_mode_enum, default="end")
+    status: Mapped[str] = mapped_column(publish_status_enum, default="draft")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Upload(Base):
+    __tablename__ = "uploads"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    purpose: Mapped[str] = mapped_column(upload_purpose_enum)
+    ref_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    provider: Mapped[str] = mapped_column(String, default="local")
+    storage_key: Mapped[str] = mapped_column(String)
+    mime: Mapped[str] = mapped_column(String)
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 # Lazy: apps like the healthcheck-only test suite import this module without a DATABASE_URL set;

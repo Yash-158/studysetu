@@ -178,12 +178,17 @@ class Retention(BaseModel):
     materials: str
 
 
+class MaterialsConfig(BaseModel):
+    min_extractable_chars: int
+
+
 class StorageConfig(BaseModel):
     provider: str
     upload_dir: str
     max_upload_mb: int
     retention: Retention
     cleanup_interval_minutes: int
+    materials: MaterialsConfig
 
 
 class CacheConfig(BaseModel):
