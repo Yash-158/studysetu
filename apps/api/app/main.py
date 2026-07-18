@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.modules import auth as auth_module
+from app.modules import institutions as institutions_module
+from app.modules import pools as pools_module
 
 def create_app() -> FastAPI:
     setup_logging()
@@ -28,7 +30,8 @@ def create_app() -> FastAPI:
         return settings.public()
 
     app.include_router(auth_module.router)
-    # TODO(M2): mount app.modules.institutions.router
+    app.include_router(institutions_module.router)
+    app.include_router(pools_module.router)
     # TODO(M3): mount app.modules.curriculum.router
     # TODO(M4): mount app.modules.assessment.router
     # TODO(M5): mount app.modules.learning.router

@@ -2,6 +2,7 @@
 Contract: require_role('teacher') dependency used by EVERY non-student route (RULES.md #12)."""
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -13,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.db import User, get_db
+from app.core.db import Institution, User, get_db
 
 _JWT_ALGORITHM = settings.get("auth", "jwt", "algorithm", default="HS256")
 _ACCESS_TTL = timedelta(minutes=settings.get("auth", "jwt", "access_ttl_minutes", default=30))
@@ -34,6 +35,11 @@ def verify_secret(value: str, hashed: str | None) -> bool:
     if not hashed:
         return False
     return bcrypt.checkpw(value.encode(), hashed.encode())
+
+
+def generate_activation_code() -> str:
+    length = settings.get("auth", "activation", "code_length", default=8)
+    return "".join(secrets.choice("0123456789") for _ in range(length))
 
 
 def _issue_token(user: User, token_type: str, ttl: timedelta) -> str:
@@ -94,3 +100,27 @@ def require_role(*roles: str):
         return user
 
     return dependency
+
+
+async def require_institution_admin(
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> User:
+    """Institution-admin capability: real admins, plus a self-serve teacher acting as the sole
+    admin-teacher of their own personal institution (FEATURE_EXPLANATION S11: "one admin-teacher").
+    No new role added - a teacher only gets this on an is_personal institution, never another's."""
+    if user.role == "admin":
+        return user
+    if user.role == "teacher":
+        institution = (
+            await db.execute(select(Institution).where(Institution.id == user.institution_id))
+        ).scalar_one_or_none()
+        if institution is not None and institution.is_personal:
+            return user
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "forbidden",
+            "message": "Your role cannot access this route",
+            "hint": "Requires institution admin capability",
+        },
+    )

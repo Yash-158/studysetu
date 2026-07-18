@@ -1,5 +1,6 @@
 """Async SQLAlchemy engine/session factory. Pool sizes from config/database.yaml.
-Models: institutions/users only (M1 scope). Later milestones add their own tables here as needed."""
+Models: institutions/users (M1) + pools/pool_members (M2). Later milestones add their own tables
+here as needed."""
 from __future__ import annotations
 
 import json
@@ -45,7 +46,25 @@ class User(Base):
     activation_code_hash: Mapped[str | None] = mapped_column(String)
     locale: Mapped[str] = mapped_column(String)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Pool(Base):
+    __tablename__ = "pools"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    institution_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("institutions.id"))
+    name: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class PoolMember(Base):
+    __tablename__ = "pool_members"
+
+    pool_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("pools.id"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
 
 # Lazy: apps like the healthcheck-only test suite import this module without a DATABASE_URL set;

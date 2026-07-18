@@ -75,6 +75,7 @@ async def _create_user(
         )
         if created_at is not None:
             user.created_at = created_at
+            user.issued_at = created_at  # activation TTL is measured from issued_at (M2)
         db.add(user)
         await db.commit()
         await db.refresh(user)

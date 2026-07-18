@@ -5,6 +5,7 @@ import { LandingPage } from './LandingPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LoginPage } from '../features/auth/LoginPage'
 import { ActivatePage } from '../features/auth/ActivatePage'
+import { TeacherSignupPage } from '../features/auth/TeacherSignupPage'
 import { StudentShell } from '../features/student/StudentShell'
 import { TeacherShell } from '../features/teacher/TeacherShell'
 import { AdminShell } from '../features/admin/AdminShell'
@@ -22,6 +23,7 @@ export function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/activate" element={<ActivatePage />} />
+        <Route path="/teacher-signup" element={<TeacherSignupPage />} />
         <Route
           path="/student/*"
           element={
