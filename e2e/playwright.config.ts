@@ -6,6 +6,13 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: '.',
   fullyParallel: false,
+  // fullyParallel:false only serializes tests WITHIN a file; Playwright still runs different spec
+  // FILES concurrently across workers by default. Multiple specs share the same fixed seeded demo
+  // accounts (anvi@gls-demo.test, 21BCE001) for their "activate once" step - running two files'
+  // activation attempts in parallel races on which one wins, and the loser's UI stays on /activate
+  // instead of redirecting. workers:1 serializes spec files too, matching this suite's own stated
+  // Determinism goal (see README.md) at the cost of a fully sequential (not parallel) local run.
+  workers: 1,
   retries: 0,
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',

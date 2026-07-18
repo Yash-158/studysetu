@@ -85,6 +85,8 @@ body {
 
 .ss-field textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.16); font-size: 14px; font-family: monospace; }
 
+.ss-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 4px solid var(--color-attention); }
+
 @media print {
   .ss-no-print { display: none; }
 }

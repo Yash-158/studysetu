@@ -13,6 +13,10 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://app:ci@localhost:5432/appdb
       JWT_SECRET: ci-test-secret
+      # config/storage.yaml's production default (/data/uploads) is a container volume path the
+      # runner has no permission to create at filesystem root - same class of gotcha as bare-metal
+      # local dev (see .env.example), fixed the same way: an APP__ override to a writable path.
+      APP__storage__upload_dir: /tmp/studysetu-uploads
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
