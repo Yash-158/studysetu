@@ -63,7 +63,10 @@ test.describe.serial('M2: CSV import -> pool -> activate -> login, and self-serv
     await page.getByRole('button', { name: 'Pools' }).click()
     await page.getByLabel('Name').fill(`E2E-Pool-${RUN_ID}`)
     await page.getByRole('button', { name: 'Create pool' }).click()
-    await expect(page.getByText(`E2E-Pool-${RUN_ID}`)).toBeVisible()
+    // Scoped to the heading, not a bare text search: the roster-list button for this same pool
+    // ("E2E-Pool-X (0 members)") is visible at the same time and also contains this name as a
+    // substring, which trips Playwright's strict mode on an unscoped getByText match.
+    await expect(page.getByRole('heading', { name: `E2E-Pool-${RUN_ID}` })).toBeVisible()
 
     for (let i = 0; i < 10; i++) {
       await page.getByLabel(new RegExp(`E2E Student ${RUN_ID}-${i} `)).check()
