@@ -4,8 +4,8 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from './Button'
+import { Logo } from './Logo'
 import { useAuth } from '../lib/auth'
-import { getConfig } from '../lib/config'
 
 export function RoleShell({
   roleLabel,
@@ -19,12 +19,11 @@ export function RoleShell({
   const navigate = useNavigate()
   const user = useAuth((s) => s.user)
   const logout = useAuth((s) => s.logout)
-  const product = getConfig().product as { name?: string } | undefined
 
   return (
     <div>
       <header className="ss-shell-header">
-        <strong>{product?.name ?? 'StudySetu'}</strong>
+        <Logo />
         <span>
           {user?.display_name} · {roleLabel}{' '}
           <Button
