@@ -23,7 +23,7 @@ jobs:
       - run: DATABASE_URL=postgresql://app:ci@localhost:5432/appdb bash scripts/migrate.sh
       - run: cd apps/api && uv sync --all-groups
       - run: cd apps/api && uv run ruff check app
-      - run: cd apps/api && APP_CONFIG_DIR=../../config uv run pytest -q
+      - run: cd apps/api && APP_CONFIG_DIR=../../config APP_PROMPTS_DIR=../../prompts uv run pytest -q
   web:
     runs-on: ubuntu-latest
     steps:

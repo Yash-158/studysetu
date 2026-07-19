@@ -74,12 +74,18 @@ class AiQuotas(BaseModel):
     per_institution_daily_tokens: int
 
 
+class AiItemBank(BaseModel):
+    min_items: int
+    max_items: int
+
+
 class AiConfig(BaseModel):
     embedding_dim: int
     chains: AiChains
     models: dict[str, ModelSpec]
     cache: AiCache
     quotas: AiQuotas
+    item_bank: AiItemBank
 
 
 class Jwt(BaseModel):
@@ -131,11 +137,19 @@ class Decay(BaseModel):
     confidence_halflife_days: int
 
 
+class Diagnostic(BaseModel):
+    probe_size: int
+    easy: int
+    medium: int
+    hard: int
+
+
 class DatabaseConfig(BaseModel):
     pool: Pool
     echo_sql: bool
     bkt: Bkt
     decay: Decay
+    diagnostic: Diagnostic
 
 
 class Domain(BaseModel):
@@ -268,6 +282,10 @@ class Settings:
         self.smtp_port = os.environ.get("SMTP_PORT", "")
         self.smtp_user = os.environ.get("SMTP_USER", "")
         self.smtp_password = os.environ.get("SMTP_PASSWORD", "")
+        self.anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        self.gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
+        self.groq_api_key = os.environ.get("GROQ_API_KEY", "")
+        self.prompts_dir = os.environ.get("APP_PROMPTS_DIR", "prompts")
 
     def _apply_env_overrides(self) -> None:
         for key, value in os.environ.items():

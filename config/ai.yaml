@@ -8,9 +8,10 @@ ai:
     embeddings: [gemini_embed]
     ocr:        [gemini_flash, claude_sonnet]   # dormant until features.ocr
   models:
-    gemini_flash:  { model: "gemini-2.5-flash", timeout_s: 25 }
+    gemini_flash:  { model: "gemini-flash-latest", timeout_s: 60 }   # gemini-2.5-flash confirmed 404/deprecated for this key at M4; 25s timed out on a real 12-15 item structured generation (docs/MEMORY.md)
     claude_sonnet: { model: "claude-sonnet-4-6", timeout_s: 40 }
     groq_llama:    { model: "llama-3.3-70b-versatile", timeout_s: 10 }
     gemini_embed:  { model: "gemini-embedding-001", timeout_s: 10 }
   cache: { enabled: true, prompt_version: "v1", demo_mode: false }
   quotas: { max_concurrent_calls: 4, per_institution_daily_tokens: 2000000 }
+  item_bank: { min_items: 12, max_items: 15 }

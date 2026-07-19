@@ -7,9 +7,9 @@ import json
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, SmallInteger, String, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, REAL, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -28,6 +28,15 @@ readability_enum = PgEnum("readable", "stored_only", name="readability", create_
 gating_mode_enum = PgEnum("open", "recommended", "locked", name="gating_mode", create_type=False)
 feedback_mode_enum = PgEnum("instant", "end", "after_deadline", name="feedback_mode", create_type=False)
 upload_purpose_enum = PgEnum("material", "submission", "doubt_photo", name="upload_purpose", create_type=False)
+item_origin_enum = PgEnum("ai", "teacher", name="item_origin", create_type=False)
+review_status_enum = PgEnum("draft", "approved", "flagged", "retired", name="review_status", create_type=False)
+attempt_context_enum = PgEnum("diagnostic", "practice", "assessment", "revision", "explore", name="attempt_context", create_type=False)
+session_status_enum = PgEnum("planned", "in_progress", "completed", "abandoned", name="session_status", create_type=False)
+artifact_scope_enum = PgEnum("topic_shared", "segment_shared", "student_unique", "explore_global", name="artifact_scope", create_type=False)
+artifact_type_enum = PgEnum(
+    "item_bank", "segment", "summary", "cheatsheet", "flashcards", "session_plan",
+    "doubt_reply", "assignment_feedback", "mentor_card", name="artifact_type", create_type=False,
+)
 
 
 class Base(DeclarativeBase):
@@ -203,6 +212,138 @@ class Upload(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Misconception(Base):
+    __tablename__ = "misconceptions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    code: Mapped[str] = mapped_column(String)
+    title: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    origin: Mapped[str] = mapped_column(item_origin_enum, default="ai")
+    status: Mapped[str] = mapped_column(review_status_enum, default="draft")
+    stem: Mapped[str] = mapped_column(String)
+    difficulty: Mapped[int] = mapped_column(SmallInteger)  # -1 easy, 0 medium, 1 hard
+    explanation: Mapped[str] = mapped_column(String, default="")
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ItemOption(Base):
+    __tablename__ = "item_options"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("items.id"))
+    position: Mapped[int] = mapped_column(SmallInteger)
+    body: Mapped[str] = mapped_column(String)
+    is_correct: Mapped[bool] = mapped_column(Boolean, default=False)
+    misconception_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("misconceptions.id"))
+
+
+class DiagnosticSession(Base):
+    __tablename__ = "diagnostic_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    item_ids: Mapped[list[uuid.UUID]] = mapped_column(ARRAY(UUID(as_uuid=True)))
+    score: Mapped[int | None] = mapped_column(SmallInteger)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Attempt(Base):
+    __tablename__ = "attempts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("items.id"))
+    option_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("item_options.id"))
+    is_correct: Mapped[bool] = mapped_column(Boolean)
+    context: Mapped[str] = mapped_column(attempt_context_enum)
+    container_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Mastery(Base):
+    __tablename__ = "mastery"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"), primary_key=True)
+    p_known: Mapped[float] = mapped_column(REAL, default=0.3)
+    confidence: Mapped[float] = mapped_column(REAL, default=1.0)
+    attempts_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class MasteryHistory(Base):
+    __tablename__ = "mastery_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    p_known: Mapped[float] = mapped_column(REAL)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class GeneratedArtifact(Base):
+    __tablename__ = "generated_artifacts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    scope: Mapped[str] = mapped_column(artifact_scope_enum)
+    artifact_type: Mapped[str] = mapped_column(artifact_type_enum)
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    cache_key: Mapped[str] = mapped_column(String)
+    content: Mapped[dict] = mapped_column(JSONB)
+    source_hash: Mapped[str | None] = mapped_column(String)
+    prompt_version: Mapped[str] = mapped_column(String, default="v1")
+    model: Mapped[str | None] = mapped_column(String)
+    tokens: Mapped[int | None] = mapped_column(Integer)
+    flagged: Mapped[bool] = mapped_column(Boolean, default=False)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class AiInvocation(Base):
+    __tablename__ = "ai_invocations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    task: Mapped[str] = mapped_column(String)
+    provider: Mapped[str] = mapped_column(String)
+    model: Mapped[str] = mapped_column(String)
+    cache_hit: Mapped[bool] = mapped_column(Boolean, default=False)
+    ref_artifact: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("generated_artifacts.id"))
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    success: Mapped[bool] = mapped_column(Boolean)
+    error: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class DemoCache(Base):
+    __tablename__ = "demo_cache"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    task: Mapped[str] = mapped_column(String)
+    input_hash: Mapped[str] = mapped_column(String)
+    response: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
 
 # Lazy: apps like the healthcheck-only test suite import this module without a DATABASE_URL set;

@@ -9,7 +9,7 @@ services:
     image: ghcr.io/yash-158/studysetu-api:${TAG:-latest}
     container_name: studysetu-api
     env_file: [.env]
-    environment: { APP_CONFIG_DIR: /srv/config }
+    environment: { APP_CONFIG_DIR: /srv/config, APP_PROMPTS_DIR: /srv/prompts }
     volumes: [uploads_data:/data/uploads]
     depends_on: { postgres: { condition: service_healthy } }
     networks: [edge, default]
