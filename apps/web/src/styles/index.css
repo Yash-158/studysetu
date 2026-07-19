@@ -7,10 +7,13 @@
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  background: var(--color-background, var(--color-bg));
   color: var(--color-ink);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
+
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
 .ss-container {
   max-width: 480px;
@@ -27,10 +30,10 @@ body {
 }
 
 .ss-card {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md, 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 6px rgba(0, 0, 0, 0.04));
 }
 
 .ss-stack { display: flex; flex-direction: column; gap: 16px; }
@@ -54,7 +57,7 @@ body {
   min-height: 44px;
   cursor: pointer;
 }
-.ss-button-primary { background: var(--color-primary); color: #fff; }
+.ss-button-primary { background: var(--color-button-primary-bg, var(--color-primary)); color: var(--color-on-primary); }
 .ss-button-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .ss-button-ghost { background: transparent; color: var(--color-ink); }
 
