@@ -31,7 +31,15 @@ function move<T>(ids: T[], index: number, dir: -1 | 1): T[] {
   return next
 }
 
-export function SubjectBuilderPage({ subjectId, onBack }: { subjectId: string; onBack: () => void }) {
+export function SubjectBuilderPage({
+  subjectId,
+  onBack,
+  onSelectTopic,
+}: {
+  subjectId: string
+  onBack: () => void
+  onSelectTopic: (topicId: string, topicTitle: string) => void
+}) {
   const [subject, setSubject] = useState<SubjectDetail | null>(null)
   const [pools, setPools] = useState<Pool[]>([])
   const [deltas, setDeltas] = useState<PoolDelta[]>([])
@@ -300,7 +308,12 @@ export function SubjectBuilderPage({ subjectId, onBack }: { subjectId: string; o
       <Card>
         <h2>Topics</h2>
         <ul>
-          {subject.topics.map((t) => <li key={t.id}>{t.title}</li>)}
+          {subject.topics.map((t) => (
+            <li key={t.id}>
+              {t.title}{' '}
+              <Button variant="ghost" onClick={() => onSelectTopic(t.id, t.title)}>Review bank</Button>
+            </li>
+          ))}
         </ul>
         <form className="ss-stack" onSubmit={onCreateTopic}>
           <div className="ss-field">
