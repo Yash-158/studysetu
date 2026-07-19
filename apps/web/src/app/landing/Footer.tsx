@@ -5,7 +5,7 @@ export function Footer({ orgName }: { orgName?: string }) {
     <footer className="landing-footer" id="contact">
       <div className="landing-footer-grid">
         <div>
-          <Logo />
+          <Logo size="lg" />
           <p className="landing-footer-blurb">
             An AI revision and assessment companion built around one idea: diagnose the real gap, then teach that.
           </p>

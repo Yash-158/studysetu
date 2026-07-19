@@ -99,19 +99,30 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
 .ss-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 4px solid var(--color-warning); } /* 12px gap has no matching scale step */
 
+/* Logo size tokens - the two values to tune if the logo still looks wrong, nothing else needs to
+   change. --logo-size-nav drives EVERY persistent nav bar (RoleShell's header AND the landing
+   page's navbar both read this one property - previously they happened to match only because
+   both silently defaulted to the same unnamed value, which is what let the footer silently
+   default to it too instead of getting its own, larger size). --logo-size-footer drives only the
+   landing page footer's brand column, which has real vertical room for a more prominent mark. */
+:root {
+  --logo-size-nav: 56px;
+  --logo-size-footer: 96px;
+}
+
 /* Real logo.png is a 3000x3000 square (checked, not assumed) - height + object-fit:contain keeps
    any future non-square logo's aspect ratio correct too; max-width is a generous cap, not the
-   sizing mechanism. Three sizes, not one: a persistent nav header and a future hero placement
-   reasonably want different scale. */
+   sizing mechanism. size='sm' has no dedicated location yet (reserved for a future dense/compact
+   context) so it stays a plain literal rather than a third named variable nobody's tuning yet. */
 .ss-logo { object-fit: contain; display: inline-block; vertical-align: middle; }
-.ss-logo-sm { height: 24px; max-width: 120px; }
-.ss-logo-md { height: 40px; max-width: 200px; }
-.ss-logo-lg { height: 80px; max-width: 360px; }
+.ss-logo-sm { height: 28px; max-width: 140px; }
+.ss-logo-md { height: var(--logo-size-nav); max-width: 280px; }
+.ss-logo-lg { height: var(--logo-size-footer); max-width: 400px; }
 
 .ss-logo-wordmark { font-family: var(--font-display); font-weight: 700; color: var(--color-primary); line-height: 1; }
-.ss-logo-wordmark-sm { font-size: 16px; }
-.ss-logo-wordmark-md { font-size: 22px; }
-.ss-logo-wordmark-lg { font-size: 40px; }
+.ss-logo-wordmark-sm { font-size: 18px; }
+.ss-logo-wordmark-md { font-size: calc(var(--logo-size-nav) * 0.55); }
+.ss-logo-wordmark-lg { font-size: calc(var(--logo-size-footer) * 0.55); }
 
 @media print {
   .ss-no-print { display: none; }
