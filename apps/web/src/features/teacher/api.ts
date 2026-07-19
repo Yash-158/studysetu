@@ -27,6 +27,18 @@ export type Pool = { id: string; name: string }
 export type PoolDelta = { pool_id: string; pool_name: string; new_member_count: number; new_members: { id: string; display_name: string }[] }
 export type Enrollment = { id: string; display_name: string; roll_number: string | null; source_pool_id: string | null }
 
+export type Misconception = { code: string; title: string }
+export type ItemOption = { id: string; position: number; body: string; is_correct: boolean; misconception: Misconception | null }
+export type BankItem = {
+  id: string
+  topic_id: string
+  status: 'draft' | 'approved' | 'flagged' | 'retired'
+  stem: string
+  difficulty: -1 | 0 | 1
+  explanation: string
+  options: ItemOption[]
+}
+
 type ApiError = { code: string; message: string; hint: string }
 
 async function parseError(res: Response): Promise<ApiError> {
@@ -97,3 +109,14 @@ export const listEnrollments = (subjectId: string) => apiFetch(`/api/curriculum/
 
 export const removeEnrollment = (subjectId: string, userId: string) =>
   apiFetch(`/api/curriculum/subjects/${subjectId}/enrollments/${userId}`, { method: 'DELETE' }).then((r) => unwrap<{ archived: boolean }>(r))
+
+export const generateBank = (topicId: string) =>
+  apiFetch(`/api/assessment/topics/${topicId}/bank/generate`, { method: 'POST' }).then((r) => unwrap<{ generated: boolean; cache_hit: boolean; items: BankItem[] }>(r))
+
+export const getBank = (topicId: string) => apiFetch(`/api/assessment/topics/${topicId}/bank`).then((r) => unwrap<BankItem[]>(r))
+
+export const approveItem = (itemId: string) =>
+  apiFetch(`/api/assessment/items/${itemId}/approve`, { method: 'POST' }).then((r) => unwrap<{ id: string; status: string }>(r))
+
+export const approveAllBank = (topicId: string) =>
+  apiFetch(`/api/assessment/topics/${topicId}/bank/approve-all`, { method: 'POST' }).then((r) => unwrap<{ approved: number }>(r))

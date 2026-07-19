@@ -3,3 +3,4 @@ database:            # non-secret knobs; DATABASE_URL itself lives in .env
   echo_sql: false
   bkt: { p_init: 0.3, p_learn: 0.15, p_guess: 0.2, p_slip: 0.1, mastery_threshold: 0.5 }
   decay: { confidence_halflife_days: 42 }
+  diagnostic: { probe_size: 5, easy: 1, medium: 2, hard: 1 }   # 5th slot = weak-prereq if history exists, else +1 medium

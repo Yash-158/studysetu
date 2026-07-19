@@ -1,7 +1,7 @@
 # DEVELOPMENT_GUIDE.md - One Line of Code to Production
 ## The loop, end to end
 1. **Session start**: `bash scripts/verify_local.sh` -> open repo (`code .` inside WSL) -> read docs/MEMORY.md + current ROADMAP milestone.
-2. **Stack up**: `docker compose -f infra/docker-compose.dev.yml up -d` (Postgres) -> `bash scripts/migrate.sh` (idempotent) -> `uv run scripts/seed_demo.py` if fresh -> terminal A: `cd apps/api && APP_CONFIG_DIR=../../config uv run uvicorn app.main:app --reload` -> terminal B: `cd apps/web && pnpm dev`. Open http://localhost:5173 (proxies /api + /config.json to :8000).
+2. **Stack up**: `docker compose -f infra/docker-compose.dev.yml up -d` (Postgres) -> `bash scripts/migrate.sh` (idempotent) -> `uv run scripts/seed_demo.py` if fresh -> terminal A: `cd apps/api && APP_CONFIG_DIR=../../config APP_PROMPTS_DIR=../../prompts uv run uvicorn app.main:app --reload` -> terminal B: `cd apps/web && pnpm dev`. Open http://localhost:5173 (proxies /api + /config.json to :8000).
 3. **Write code** on branch `feat/mN-<thing>` (one ROADMAP checkbox). Config knobs go in config/*.yaml the moment they exist; prompts go in /prompts.
 4. **Test**: `uv run pytest` (api), `pnpm test` + `pnpm typecheck` (web), Playwright milestone spec against the seeded stack. New behavior ships WITH its test.
 5. **Commit/push**: conventional message -> PR -> CI (api, web, migrations jobs) -> review with PROMPTS.md P-REVIEW -> squash-merge.

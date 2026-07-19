@@ -1,1 +1,11 @@
-{ "note": "golden BKT vectors authored at M4 with the mastery module" }
+{
+  "note": "golden BKT vectors authored at M4 with the mastery module",
+  "params": { "p_init": 0.3, "p_learn": 0.15, "p_guess": 0.2, "p_slip": 0.1 },
+  "vectors": [
+    { "name": "all_correct_x3", "sequence": [true, true, true], "expected_p_known": [0.709756, 0.929191, 0.985846] },
+    { "name": "all_incorrect_x3", "sequence": [false, false, false], "expected_p_known": [0.19322, 0.174707, 0.171912] },
+    { "name": "mixed", "sequence": [true, true, false], "expected_p_known": [0.709756, 0.929191, 0.67807] },
+    { "name": "single_correct", "sequence": [true], "expected_p_known": [0.709756] },
+    { "name": "single_incorrect", "sequence": [false], "expected_p_known": [0.19322] }
+  ]
+}

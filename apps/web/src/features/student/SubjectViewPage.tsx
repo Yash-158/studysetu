@@ -3,7 +3,15 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { type StudentSubjectDetail, getMySubject } from './api'
 
-export function SubjectViewPage({ subjectId, onBack }: { subjectId: string; onBack: () => void }) {
+export function SubjectViewPage({
+  subjectId,
+  onBack,
+  onSelectTopic,
+}: {
+  subjectId: string
+  onBack: () => void
+  onSelectTopic: (topicId: string, topicTitle: string) => void
+}) {
   const [subject, setSubject] = useState<StudentSubjectDetail | null>(null)
 
   useEffect(() => {
@@ -33,9 +41,18 @@ export function SubjectViewPage({ subjectId, onBack }: { subjectId: string; onBa
           <div key={chapter.id} style={{ marginBottom: 16 }}>
             <strong>{chapter.title}</strong>
             <ol>
-              {chapter.blocks.map((block) => (
-                <li key={block.id}>{block.block_type === 'topic' ? block.topic?.title : `Assessment: ${block.assessment?.title}`}</li>
-              ))}
+              {chapter.blocks.map((block) => {
+                const topic = block.block_type === 'topic' ? block.topic : undefined
+                return (
+                  <li key={block.id}>
+                    {topic ? (
+                      <Button variant="ghost" onClick={() => onSelectTopic(topic.id, topic.title)}>{topic.title}</Button>
+                    ) : (
+                      `Assessment: ${block.assessment?.title}`
+                    )}
+                  </li>
+                )
+              })}
             </ol>
           </div>
         ))}
