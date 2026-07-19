@@ -4,9 +4,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.modules import assessment as assessment_module
 from app.modules import auth as auth_module
 from app.modules import curriculum as curriculum_module
 from app.modules import institutions as institutions_module
+from app.modules import learning as learning_module
+from app.modules import mastery as mastery_module
 from app.modules import pools as pools_module
 
 def create_app() -> FastAPI:
@@ -34,8 +37,11 @@ def create_app() -> FastAPI:
     app.include_router(institutions_module.router)
     app.include_router(pools_module.router)
     app.include_router(curriculum_module.router)
-    # TODO(M4): mount app.modules.assessment.router
-    # TODO(M5): mount app.modules.learning.router
+    app.include_router(assessment_module.router)
+    app.include_router(learning_module.router)
+    app.include_router(mastery_module.router)
+    # M5 mounts session-planner routes onto app.modules.learning.router (this module's diagnostic
+    # surface is real as of M4 - the earlier comment here saying "TODO(M5)" was stale, see MEMORY.md)
     # TODO(M6): mount app.modules.analytics.router
     # TODO(M7): mount app.modules.assignments.router
     # TODO(M8): mount app.modules.doubts.router, app.modules.explore.router
