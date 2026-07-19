@@ -253,7 +253,7 @@ export function SubjectBuilderPage({
       <Card>
         <h2>Chapters</h2>
         {subject.chapters.map((chapter, ci) => (
-          <div key={chapter.id} className="ss-stack-tight" style={{ marginBottom: 16 }}>
+          <div key={chapter.id} className="ss-stack-tight" style={{ marginBottom: 'var(--space-md)' }}>
             <div>
               <strong>{chapter.title}</strong>{' '}
               <span className={`ss-status-pill ss-status-${chapter.status === 'draft' ? 'invited' : 'active'}`}>{chapter.status}</span>{' '}

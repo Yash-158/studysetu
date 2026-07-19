@@ -28,7 +28,7 @@ function IssuedCodes({ items, onDismiss }: { items: CreatedInvite[]; onDismiss: 
             ))}
           </tbody>
         </table>
-        <div className="ss-no-print" style={{ display: 'flex', gap: 8 }}>
+        <div className="ss-no-print" style={{ display: 'flex', gap: 'var(--space-sm)' }}>
           <Button onClick={() => window.print()}>Print</Button>
           <Button variant="ghost" onClick={onDismiss}>Dismiss</Button>
         </div>

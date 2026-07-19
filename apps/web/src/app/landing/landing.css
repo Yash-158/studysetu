@@ -3,7 +3,7 @@
    screen in the app to consume the spacing/radius/shadow tokens end to end, not just color/font;
    Phase 5 retrofits existing screens onto this same vocabulary. */
 
-.landing { font-family: var(--font-body); color: var(--color-neutral-900, var(--color-ink)); background: var(--color-background, var(--color-bg)); }
+.landing { font-family: var(--font-body); color: var(--color-neutral-900); background: var(--color-background); }
 .landing h1, .landing h2, .landing h3 { font-family: var(--font-display); }
 .landing section { padding: var(--space-3xl) var(--space-lg); max-width: 1100px; margin: 0 auto; }
 .landing .landing-section-eyebrow { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; margin-bottom: var(--space-sm); }
@@ -52,7 +52,7 @@
 .landing-compare th, .landing-compare td { text-align: left; padding: var(--space-md); font-size: 14px; border-bottom: 1px solid var(--color-neutral-200); vertical-align: top; }
 .landing-compare th { background: var(--color-neutral-100); font-size: 12px; text-transform: uppercase; opacity: 0.6; }
 .landing-compare td.landing-compare-no { color: var(--color-neutral-500); }
-.landing-compare td.landing-compare-yes { color: var(--color-success-text, var(--color-mastery)); font-weight: 600; }
+.landing-compare td.landing-compare-yes { color: var(--color-success-text); font-weight: 600; }
 
 /* Testimonials */
 .landing-testimonial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }

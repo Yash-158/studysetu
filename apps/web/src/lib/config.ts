@@ -34,19 +34,11 @@ function applyBranding(branding: any) {
 
     const track = branding.neutral_tracks?.[palette.neutral_track] ?? {}
     for (const [step, hex] of Object.entries(track)) setVar(`--color-neutral-${step}`, hex)
-    setVar('--color-ink', track['900'])
-
-    // Back-compat aliases for the pre-token-system var names still used across existing screens
-    // (Phase 5 migrates these away; kept here so nothing breaks mid-migration).
-    setVar('--color-bg', palette.colors.background)
   }
 
   const status = branding.status
   if (status) {
     for (const [k, v] of Object.entries(status)) setVar(`--color-${k.replace(/_/g, '-')}`, v)
-    setVar('--color-attention', status.warning)
-    setVar('--color-mastery', status.success)
-    setVar('--color-danger', status.error)
   }
 
   const typography = branding.typography?.[branding.active_typography]
