@@ -1,30 +1,31 @@
-import { Link } from 'react-router-dom'
-import { Button } from '../components/Button'
+import { Navbar } from './landing/Navbar'
+import { Hero } from './landing/Hero'
+import { Features } from './landing/Features'
+import { HowItWorks } from './landing/HowItWorks'
+import { Benefits } from './landing/Benefits'
+import { Testimonials } from './landing/Testimonials'
+import { Pricing } from './landing/Pricing'
+import { FAQ } from './landing/FAQ'
+import { Footer } from './landing/Footer'
+import './landing/landing.css'
 import { getConfig } from '../lib/config'
 
 export function LandingPage() {
   const config = getConfig()
-  const product = config.product as { name?: string; tagline?: string } | undefined
+  const product = config.product as { name?: string; tagline?: string; org?: string } | undefined
   const selfServeEnabled = Boolean((config.features as Record<string, unknown> | undefined)?.self_serve_teacher_tier)
 
   return (
-    <div className="ss-container">
-      <div className="ss-stack">
-        <h1>{product?.name ?? 'StudySetu'}</h1>
-        <p>{product?.tagline}</p>
-        <Link to="/login">
-          <Button>Log in</Button>
-        </Link>
-        <p>
-          First time here? <Link className="ss-link" to="/activate">Activate your account</Link>
-        </p>
-        {selfServeEnabled && (
-          <p>
-            Just you, no institution yet?{' '}
-            <Link className="ss-link" to="/teacher-signup">Start your own classroom</Link>
-          </p>
-        )}
-      </div>
+    <div className="landing">
+      <Navbar selfServeEnabled={selfServeEnabled} />
+      <Hero tagline={product?.tagline} selfServeEnabled={selfServeEnabled} />
+      <Features />
+      <HowItWorks />
+      <Benefits />
+      <Testimonials />
+      <Pricing selfServeEnabled={selfServeEnabled} />
+      <FAQ />
+      <Footer orgName={product?.org ?? product?.name} />
     </div>
   )
 }
