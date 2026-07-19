@@ -13,23 +13,76 @@ class Product(BaseModel):
     org: str
 
 
-class Colors(BaseModel):
+class StatusTokens(BaseModel):
+    success: str
+    warning: str
+    error: str
+    success_text: str
+    warning_text: str
+    error_text: str
+    surface: str
+
+
+class PaletteColors(BaseModel):
     primary: str
-    attention: str
-    mastery: str
-    danger: str
-    bg: str
-    ink: str
+    secondary: str
+    accent: str
+    background: str
 
 
-class Fonts(BaseModel):
+class Palette(BaseModel):
+    name: str
+    colors: PaletteColors
+    button_primary_bg: str
+    neutral_track: str
+    logo_colors: list[str]
+
+
+class TypographyPairing(BaseModel):
+    name: str
     body: str
     display: str
+    google_fonts_url: str
+
+
+class Spacing(BaseModel):
+    xs: str
+    sm: str
+    md: str
+    lg: str
+    xl: str
+    xxl: str = Field(alias="2xl")
+    xxxl: str = Field(alias="3xl")
+
+
+class Radius(BaseModel):
+    sm: str
+    md: str
+    lg: str
+    full: str
+
+
+class Shadow(BaseModel):
+    sm: str
+    md: str
+    lg: str
+
+
+class Logo(BaseModel):
+    path: str
 
 
 class Branding(BaseModel):
-    colors: Colors
-    fonts: Fonts
+    active_palette: str
+    active_typography: str
+    logo: Logo
+    status: StatusTokens
+    neutral_tracks: dict[str, dict[str, str]]
+    palettes: dict[str, Palette]
+    typography: dict[str, TypographyPairing]
+    spacing: Spacing
+    radius: Radius
+    shadow: Shadow
 
 
 class Features(BaseModel):

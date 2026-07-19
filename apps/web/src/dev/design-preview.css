@@ -1,0 +1,69 @@
+/* Dev-only. Never imported by any production entry point - only DesignPreview.tsx imports this.
+   Every color/font/spacing/radius/shadow value here is a var() reference; the switcher sets them
+   as inline CSS custom properties on .dp-stage, matching how the real app's config.ts injects
+   the same variable names onto :root. */
+
+.dp-page { font-family: var(--dp-font-body, sans-serif); background: #fff; min-height: 100vh; }
+
+.dp-toolbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  padding: 12px 20px; background: #1C1917; color: #fff; font-family: sans-serif; font-size: 13px;
+}
+.dp-toolbar select { padding: 6px 8px; border-radius: 6px; border: 1px solid #444; }
+.dp-toolbar .dp-swatches { display: flex; gap: 4px; }
+.dp-toolbar .dp-swatch { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
+.dp-toolbar .dp-fallback-note { color: #FDBA74; font-weight: 600; }
+
+.dp-stage { padding: 32px; display: flex; flex-direction: column; gap: 40px; }
+.dp-stage { background: var(--color-background); color: var(--color-neutral-900); }
+
+.dp-section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; margin-bottom: 8px; font-family: sans-serif; }
+
+/* Navbar */
+.dp-navbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--color-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.dp-navbar-brand { font-family: var(--dp-font-display, sans-serif); font-weight: 700; font-size: 20px; color: var(--color-primary); }
+.dp-navbar-links { display: flex; gap: 20px; font-size: 14px; }
+
+/* Hero */
+.dp-hero { padding: 48px 24px; border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-md); text-align: center; }
+.dp-hero h1 { font-family: var(--dp-font-display, sans-serif); font-size: 36px; margin: 0 0 12px; color: var(--color-neutral-900); }
+.dp-hero p { font-size: 16px; opacity: 0.75; margin: 0 0 24px; }
+
+/* Buttons - 3 hierarchy tiers */
+.dp-button-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.dp-btn { border: none; border-radius: var(--radius-md); padding: 10px 20px; font-size: 15px; font-weight: 600; cursor: pointer; min-height: 44px; }
+.dp-btn-primary { background: var(--color-button-primary-bg); color: #fff; }
+.dp-btn-secondary { background: transparent; color: var(--color-primary); border: 1.5px solid var(--color-primary); }
+.dp-btn-tertiary { background: transparent; color: var(--color-primary); text-decoration: underline; padding: 10px 4px; }
+
+/* Cards */
+.dp-card-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.dp-card { background: var(--color-surface); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); flex: 1; min-width: 220px; }
+.dp-card h3 { font-family: var(--dp-font-display, sans-serif); margin: 0 0 8px; font-size: 18px; }
+.dp-card p { margin: 0; font-size: 14px; opacity: 0.75; }
+
+/* Data table */
+.dp-table { width: 100%; border-collapse: collapse; background: var(--color-surface); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); }
+.dp-table th, .dp-table td { text-align: left; padding: 10px 14px; font-size: 14px; border-bottom: 1px solid var(--color-neutral-200); }
+.dp-table th { text-transform: uppercase; font-size: 11px; opacity: 0.6; background: var(--color-neutral-100); }
+
+/* Form input */
+.dp-field { max-width: 320px; }
+.dp-field label { display: block; font-size: 13px; margin-bottom: 4px; font-weight: 600; }
+.dp-field input { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--color-neutral-300); font-size: 15px; }
+.dp-field input:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+/* Progress / mastery bar */
+.dp-progress-track { background: var(--color-neutral-200); border-radius: var(--radius-full); height: 12px; overflow: hidden; max-width: 320px; }
+.dp-progress-fill { background: var(--color-accent); height: 100%; border-radius: var(--radius-full); }
+
+/* Alert */
+.dp-alert { border-radius: var(--radius-md); padding: 14px 16px; font-size: 14px; border-left: 4px solid var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface)); color: var(--color-warning-text); }
+
+/* Badges / status pills - directly exercises the Phase 1 *_text contrast fix */
+.dp-badge-row { display: flex; gap: 8px; }
+.dp-badge { display: inline-block; padding: 3px 10px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; }
+.dp-badge-success { background: color-mix(in srgb, var(--color-success) 18%, transparent); color: var(--color-success-text); }
+.dp-badge-warning { background: color-mix(in srgb, var(--color-warning) 18%, transparent); color: var(--color-warning-text); }
+.dp-badge-error { background: color-mix(in srgb, var(--color-error) 18%, transparent); color: var(--color-error-text); }

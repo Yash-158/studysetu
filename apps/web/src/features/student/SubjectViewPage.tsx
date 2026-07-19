@@ -38,7 +38,7 @@ export function SubjectViewPage({
       <Card>
         <h2>Chapters</h2>
         {subject.chapters.map((chapter) => (
-          <div key={chapter.id} style={{ marginBottom: 16 }}>
+          <div key={chapter.id} style={{ marginBottom: 'var(--space-md)' }}>
             <strong>{chapter.title}</strong>
             <ol>
               {chapter.blocks.map((block) => {
