@@ -99,8 +99,19 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
 .ss-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 4px solid var(--color-warning); } /* 12px gap has no matching scale step */
 
-.ss-logo { height: 28px; max-width: 160px; object-fit: contain; display: inline-block; }
-.ss-logo-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--color-primary); }
+/* Real logo.png is a 3000x3000 square (checked, not assumed) - height + object-fit:contain keeps
+   any future non-square logo's aspect ratio correct too; max-width is a generous cap, not the
+   sizing mechanism. Three sizes, not one: a persistent nav header and a future hero placement
+   reasonably want different scale. */
+.ss-logo { object-fit: contain; display: inline-block; vertical-align: middle; }
+.ss-logo-sm { height: 24px; max-width: 120px; }
+.ss-logo-md { height: 40px; max-width: 200px; }
+.ss-logo-lg { height: 80px; max-width: 360px; }
+
+.ss-logo-wordmark { font-family: var(--font-display); font-weight: 700; color: var(--color-primary); line-height: 1; }
+.ss-logo-wordmark-sm { font-size: 16px; }
+.ss-logo-wordmark-md { font-size: 22px; }
+.ss-logo-wordmark-lg { font-size: 40px; }
 
 @media print {
   .ss-no-print { display: none; }

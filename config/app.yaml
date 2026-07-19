@@ -5,7 +5,7 @@ product: { name: "StudySetu", tagline: "A Personalized Learning Platform for Eve
 # of 2 font pairings. Nothing else in the app should ever read a hardcoded color or font -
 # apps/web/src/lib/config.ts resolves these into CSS custom properties at boot.
 branding:
-  active_palette: palette_1
+  active_palette: palette_3
   active_typography: pairing_1
   logo: { path: "/brand/logo.png" }   # drop a real file here; falls back to a text wordmark until one exists
 
