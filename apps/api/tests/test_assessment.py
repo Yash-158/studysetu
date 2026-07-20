@@ -21,7 +21,7 @@ pytestmark = [
 
 import app.core.db as db_module  # noqa: E402
 from app.ai.providers import ProviderResult  # noqa: E402
-from app.ai.providers import claude as claude_provider  # noqa: E402
+from app.ai.providers import groq as groq_provider  # noqa: E402
 from app.core.db import Institution, Item, SessionLocal, User  # noqa: E402
 from app.core.security import hash_secret  # noqa: E402
 from app.main import app  # noqa: E402
@@ -102,7 +102,7 @@ async def test_generate_bank_creates_draft_items_with_valid_shape(client: AsyncC
     async def _fake_invoke(model_cfg, *, system, prompt):
         return _mock_bank(6)
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     slug = await _create_institution()
     token = await _teacher(client, slug)
     _, topic_id = await _topic(client, token)
@@ -129,7 +129,7 @@ async def test_second_generate_is_cache_hit_and_does_not_duplicate_items(client:
         calls["n"] += 1
         return _mock_bank(5)
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     slug = await _create_institution()
     token = await _teacher(client, slug)
     _, topic_id = await _topic(client, token)
@@ -153,7 +153,7 @@ async def test_approve_all_flips_status_and_only_touches_drafts(client: AsyncCli
     async def _fake_invoke(model_cfg, *, system, prompt):
         return _mock_bank(4)
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     slug = await _create_institution()
     token = await _teacher(client, slug)
     _, topic_id = await _topic(client, token)

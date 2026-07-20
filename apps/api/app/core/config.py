@@ -105,13 +105,14 @@ class Locales(BaseModel):
 class ModelSpec(BaseModel):
     model: str
     timeout_s: int
+    temperature: float = 0.3  # low/deterministic default for structured JSON generation
 
 
 class AiChains(BaseModel):
-    item_bank: list[str]
-    session: list[str]
-    dialogue: list[str]
-    fast_text: list[str]
+    # item_bank/session/dialogue/fast_text are NOT listed here - their provider order is resolved
+    # dynamically at call time from ai.ai_primary_provider/ai_fallback_provider (gateway.py), not
+    # declared statically. embeddings/ocr stay static: embeddings needs gemini's dedicated embed()
+    # capability (no other onboarded provider implements it), ocr is dormant/vision-specific.
     embeddings: list[str]
     ocr: list[str]
 
@@ -133,6 +134,11 @@ class AiItemBank(BaseModel):
 
 
 class AiConfig(BaseModel):
+    # Human-set knobs (docs/CONFIG.md): which of the 4 onboarded text providers leads the dynamic
+    # chains, and which is the second try. The remaining two always serve as deeper fallback -
+    # switching either value changes real behavior with zero code changes (gateway.py).
+    ai_primary_provider: str
+    ai_fallback_provider: str
     embedding_dim: int
     chains: AiChains
     models: dict[str, ModelSpec]
@@ -338,6 +344,8 @@ class Settings:
         self.anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         self.gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
         self.groq_api_key = os.environ.get("GROQ_API_KEY", "")
+        self.cerebras_api_key = os.environ.get("CEREBRAS_API_KEY", "")
+        self.deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY", "")
         self.prompts_dir = os.environ.get("APP_PROMPTS_DIR", "prompts")
 
     def _apply_env_overrides(self) -> None:

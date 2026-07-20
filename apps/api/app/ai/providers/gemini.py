@@ -1,7 +1,10 @@
 """gemini provider adapter: invoke(model_cfg, payload) -> normalized result; embed(...) for the
 embeddings chain (dormant until M8 doubts/explore - implemented now since ai/__init__'s embed()
 facade method needs a real backend, but nothing calls it yet).
-The ONLY file allowed to import the Gemini SDK/HTTP surface (RULES.md #1). Plain httpx."""
+The ONLY file allowed to import the Gemini SDK/HTTP surface (RULES.md #1). Plain httpx.
+
+Tuning: generationConfig.temperature comes from model_cfg (ai.yaml) kept low (0.2-0.3) for
+deterministic structured JSON - this is factual content generation, not open-ended chat."""
 from __future__ import annotations
 
 import httpx
@@ -23,6 +26,7 @@ async def invoke(model_cfg: ModelSpec, *, system: str, prompt: str) -> ProviderR
                 json={
                     "contents": [{"parts": [{"text": prompt}]}],
                     "systemInstruction": {"parts": [{"text": system}]},
+                    "generationConfig": {"temperature": model_cfg.temperature},
                 },
             )
         res.raise_for_status()

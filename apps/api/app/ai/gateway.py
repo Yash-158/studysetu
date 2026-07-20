@@ -20,18 +20,41 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.providers import ProviderError
+from app.ai.providers import cerebras as cerebras_provider
 from app.ai.providers import claude as claude_provider
+from app.ai.providers import deepseek as deepseek_provider
 from app.ai.providers import gemini as gemini_provider
 from app.ai.providers import groq as groq_provider
 from app.core.config import ModelSpec, settings
 from app.core.db import AiInvocation, DemoCache, GeneratedArtifact
 
 _PROVIDER_BY_MODEL_KEY = {
-    "claude_sonnet": claude_provider,
-    "gemini_flash": gemini_provider,
+    "claude": claude_provider,
+    "gemini": gemini_provider,
     "gemini_embed": gemini_provider,
-    "groq_llama": groq_provider,
+    "groq": groq_provider,
+    "cerebras": cerebras_provider,
+    "deepseek": deepseek_provider,
 }
+
+# The 4 providers eligible for ai_primary_provider/ai_fallback_provider (Claude excluded - it's
+# still a valid onboarded provider but deliberately outside this comparison, same as production
+# leaving ANTHROPIC_API_KEY unconfigured since M4 - see docs/MEMORY.md). Fixed order used to fill
+# the remaining fallback depth once primary/fallback are placed first.
+_COMPARABLE_PROVIDERS = ["groq", "gemini", "cerebras", "deepseek"]
+
+# Tasks whose provider order is resolved dynamically from ai_primary_provider/ai_fallback_provider
+# instead of a static config/ai.yaml list - see _resolve_dynamic_chain().
+_DYNAMIC_CHAIN_TASKS = {"item_bank", "session", "dialogue", "fast_text"}
+
+
+def _resolve_dynamic_chain() -> list[str]:
+    """[primary, fallback, <remaining two in fixed order>] - switching either config value changes
+    real behavior with zero code changes; the other two always serve as deeper fallback."""
+    primary = settings.get("ai", "ai_primary_provider", default="groq")
+    fallback = settings.get("ai", "ai_fallback_provider", default="gemini")
+    remaining = [p for p in _COMPARABLE_PROVIDERS if p not in (primary, fallback)]
+    return [primary, fallback, *remaining]
 
 
 class GatewayError(Exception):
@@ -126,7 +149,7 @@ async def generate(
             )
             return GenerateResult(content=existing.content, cache_hit=True, artifact_id=existing.id)
 
-    chain = settings.get("ai", "chains", task, default=[])
+    chain = _resolve_dynamic_chain() if task in _DYNAMIC_CHAIN_TASKS else settings.get("ai", "chains", task, default=[])
     if not chain:
         raise GatewayError(f"No provider chain configured for task '{task}'")
 

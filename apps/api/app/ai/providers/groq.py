@@ -1,6 +1,10 @@
 """groq provider adapter: invoke(model_cfg, payload) -> normalized result.
 The ONLY file allowed to import the Groq SDK/HTTP surface (RULES.md #1). Plain httpx against
-Groq's OpenAI-compatible chat completions endpoint - no groq SDK needed."""
+Groq's OpenAI-compatible chat completions endpoint - no groq SDK needed.
+
+Tuning: temperature comes from model_cfg (ai.yaml) kept low (0.2-0.3) for deterministic structured
+JSON - this is factual content generation, not open-ended chat. Groq's Llama models have no
+separate "thinking mode" or structured-output flag confirmed for this task, so neither is set."""
 from __future__ import annotations
 
 import httpx
@@ -22,6 +26,7 @@ async def invoke(model_cfg: ModelSpec, *, system: str, prompt: str) -> ProviderR
                 json={
                     "model": model_cfg.model,
                     "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+                    "temperature": model_cfg.temperature,
                 },
             )
         res.raise_for_status()

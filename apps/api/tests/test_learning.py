@@ -20,7 +20,7 @@ pytestmark = [
 
 import app.core.db as db_module  # noqa: E402
 from app.ai.providers import ProviderResult  # noqa: E402
-from app.ai.providers import claude as claude_provider  # noqa: E402
+from app.ai.providers import groq as groq_provider  # noqa: E402
 from app.core.db import Institution, Item, Mastery, SessionLocal, SubjectEnrollment, User  # noqa: E402
 from app.core.security import hash_secret  # noqa: E402
 from app.main import app  # noqa: E402
@@ -117,7 +117,7 @@ async def _generate_and_approve(client: AsyncClient, teacher_token: str, topic_i
     async def _fake_invoke(model_cfg, *, system, prompt):
         return _mock_bank(n, difficulties)
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     res = await client.post(f"/api/assessment/topics/{topic_id}/bank/generate", headers=_auth(teacher_token))
     assert res.status_code == 200, res.text
     await client.post(f"/api/assessment/topics/{topic_id}/bank/approve-all", headers=_auth(teacher_token))
@@ -235,7 +235,7 @@ async def test_draft_items_are_never_drawn_even_when_the_bank_also_has_approved_
     async def _fake_invoke(model_cfg, *, system, prompt):
         return _mock_bank(12)
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     await client.post(f"/api/assessment/topics/{topic_id}/bank/generate", headers=_auth(teacher_token))
     # Deliberately do NOT approve-all - the bank exists but every item is still status='draft'.
 
