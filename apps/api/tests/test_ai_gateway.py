@@ -1,7 +1,9 @@
 """ai/gateway.py: lookup-before-generate (RULES.md #4), per-provider timeout/failover/one-retry
-and every-attempt logging (RULES.md #13). Provider HTTP calls are monkeypatched - these test the
-gateway's own control flow, not live third-party APIs (that's what e2e/diagnostic_flow.spec.ts,
-run against real configured keys, proves separately).
+and every-attempt logging (RULES.md #13), and the dynamic chain resolution driven by
+ai.ai_primary_provider/ai_fallback_provider across all 4 comparable providers (groq/gemini/
+cerebras/deepseek - claude deliberately excluded from this comparison, see gateway.py).
+Provider HTTP calls are monkeypatched - these test the gateway's own control flow, not live
+third-party APIs (that's what the one-gentle-call-per-provider live check proves separately).
 Requires a real Postgres (DATABASE_URL) with migrations applied - same pattern as test_pools.py."""
 from __future__ import annotations
 
@@ -22,8 +24,11 @@ import app.core.db as db_module  # noqa: E402
 from app import ai  # noqa: E402
 from app.ai import gateway  # noqa: E402
 from app.ai.providers import ProviderError, ProviderResult  # noqa: E402
-from app.ai.providers import claude as claude_provider  # noqa: E402
+from app.ai.providers import cerebras as cerebras_provider  # noqa: E402
+from app.ai.providers import deepseek as deepseek_provider  # noqa: E402
 from app.ai.providers import gemini as gemini_provider  # noqa: E402
+from app.ai.providers import groq as groq_provider  # noqa: E402
+from app.core.config import settings  # noqa: E402
 from app.core.db import AiInvocation, SessionLocal  # noqa: E402
 
 
@@ -61,7 +66,8 @@ async def test_lookup_before_generate_then_cache_hit_on_second_call(monkeypatch)
         calls["n"] += 1
         return _ok('{"n": 1}')
 
-    monkeypatch.setattr(claude_provider, "invoke", _fake_invoke)
+    # groq is the default ai_primary_provider (config/ai.yaml) - item_bank's dynamic chain tries it first.
+    monkeypatch.setattr(groq_provider, "invoke", _fake_invoke)
     topic_id = None
     since = datetime.now(timezone.utc)
     source_hash = f"h-same-{uuid.uuid4()}"  # same value both calls - that's what makes call 2 a cache hit
@@ -93,13 +99,13 @@ async def test_lookup_before_generate_then_cache_hit_on_second_call(monkeypatch)
 
 
 async def test_failover_logs_failed_attempt_then_succeeds_on_next_provider(monkeypatch):
-    async def _claude_fails(model_cfg, *, system, prompt):
+    async def _groq_fails(model_cfg, *, system, prompt):
         raise ProviderError("simulated: primary key killed")
 
     async def _gemini_succeeds(model_cfg, *, system, prompt):
         return _ok('{"from": "gemini"}')
 
-    monkeypatch.setattr(claude_provider, "invoke", _claude_fails)
+    monkeypatch.setattr(groq_provider, "invoke", _groq_fails)
     monkeypatch.setattr(gemini_provider, "invoke", _gemini_succeeds)
     topic_id = None
     since = datetime.now(timezone.utc)
@@ -114,19 +120,19 @@ async def test_failover_logs_failed_attempt_then_succeeds_on_next_provider(monke
     assert result.content == {"from": "gemini"}
     async with SessionLocal() as db:
         rows = await _invocations_for(db, "item_bank", since)
-    failed = [r for r in rows if r.provider == "claude_sonnet" and r.success is False]
-    succeeded = [r for r in rows if r.provider == "gemini_flash" and r.success is True]
+    failed = [r for r in rows if r.provider == "groq" and r.success is False]
+    succeeded = [r for r in rows if r.provider == "gemini" and r.success is True]
     assert len(failed) == 1
     assert len(succeeded) == 1
     assert "simulated" in (failed[0].error or "")
 
 
 async def test_one_parse_retry_same_provider_before_failover(monkeypatch):
-    calls = {"claude": 0, "gemini": 0}
+    calls = {"groq": 0, "gemini": 0}
 
-    async def _claude_bad_then_good(model_cfg, *, system, prompt):
-        calls["claude"] += 1
-        if calls["claude"] == 1:
+    async def _groq_bad_then_good(model_cfg, *, system, prompt):
+        calls["groq"] += 1
+        if calls["groq"] == 1:
             return _ok("not json at all")
         return _ok('{"recovered": true}')
 
@@ -134,7 +140,7 @@ async def test_one_parse_retry_same_provider_before_failover(monkeypatch):
         calls["gemini"] += 1
         return _ok('{"from": "gemini"}')
 
-    monkeypatch.setattr(claude_provider, "invoke", _claude_bad_then_good)
+    monkeypatch.setattr(groq_provider, "invoke", _groq_bad_then_good)
     monkeypatch.setattr(gemini_provider, "invoke", _gemini_should_not_be_called)
     topic_id = None
 
@@ -146,16 +152,18 @@ async def test_one_parse_retry_same_provider_before_failover(monkeypatch):
         await db.commit()
 
     assert result.content == {"recovered": True}
-    assert calls["claude"] == 2
+    assert calls["groq"] == 2
     assert calls["gemini"] == 0
 
 
-async def test_all_providers_exhausted_raises_but_still_logs_every_attempt(monkeypatch):
+async def test_all_four_providers_exhausted_raises_but_still_logs_every_attempt(monkeypatch):
     async def _always_fails(model_cfg, *, system, prompt):
         raise ProviderError("down")
 
-    monkeypatch.setattr(claude_provider, "invoke", _always_fails)
+    monkeypatch.setattr(groq_provider, "invoke", _always_fails)
     monkeypatch.setattr(gemini_provider, "invoke", _always_fails)
+    monkeypatch.setattr(cerebras_provider, "invoke", _always_fails)
+    monkeypatch.setattr(deepseek_provider, "invoke", _always_fails)
     topic_id = None
     since = datetime.now(timezone.utc)
 
@@ -170,4 +178,37 @@ async def test_all_providers_exhausted_raises_but_still_logs_every_attempt(monke
     async with SessionLocal() as db:
         rows = await _invocations_for(db, "item_bank", since)
     failed_providers = {r.provider for r in rows if r.success is False}
-    assert {"claude_sonnet", "gemini_flash"} <= failed_providers
+    assert {"groq", "gemini", "cerebras", "deepseek"} <= failed_providers
+
+
+async def test_ai_primary_fallback_config_values_genuinely_control_chain_order(monkeypatch):
+    """The core deliverable: switching ai_primary_provider/ai_fallback_provider must change real
+    behavior with zero code changes. Proven by swapping them to put deepseek first/cerebras second
+    (the opposite of config/ai.yaml's groq/gemini default) and confirming the gateway actually
+    tries deepseek first, not groq."""
+    original_primary = settings.get("ai", "ai_primary_provider")
+    original_fallback = settings.get("ai", "ai_fallback_provider")
+    settings._data["ai"]["ai_primary_provider"] = "deepseek"
+    settings._data["ai"]["ai_fallback_provider"] = "cerebras"
+
+    async def _groq_must_not_be_called(model_cfg, *, system, prompt):
+        raise AssertionError("groq is no longer primary/fallback - must not be reached before deepseek/cerebras")
+
+    async def _deepseek_succeeds(model_cfg, *, system, prompt):
+        return _ok('{"from": "deepseek"}')
+
+    monkeypatch.setattr(groq_provider, "invoke", _groq_must_not_be_called)
+    monkeypatch.setattr(deepseek_provider, "invoke", _deepseek_succeeds)
+
+    try:
+        async with SessionLocal() as db:
+            result = await ai.generate(
+                "item_bank", db=db, scope="topic_shared", artifact_type="item_bank", topic_id=None,
+                params={}, source_hash=f"h-config-swap-{uuid.uuid4()}", render_user_prompt=lambda: "prompt",
+            )
+            await db.commit()
+    finally:
+        settings._data["ai"]["ai_primary_provider"] = original_primary
+        settings._data["ai"]["ai_fallback_provider"] = original_fallback
+
+    assert result.content == {"from": "deepseek"}

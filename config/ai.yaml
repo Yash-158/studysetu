@@ -1,17 +1,29 @@
 ai:
+  # Human-set: which onboarded provider leads item_bank/session/dialogue/fast_text's chain, and
+  # which is the second try (gateway.py's _resolve_dynamic_chain). The other two of the 4 always
+  # serve as deeper fallback even when not primary/secondary. Change these two values by hand once
+  # real output quality has been compared across all 4 - no code change needed either way.
+  # Current values are the user's chosen pairing for prototyping (pre-hackathon-decision).
+  ai_primary_provider: groq
+  ai_fallback_provider: gemini
   embedding_dim: 768            # MUST match model + vector(768) columns (DATABASE.md)
   chains:
-    item_bank:  [claude_sonnet, gemini_flash]
-    session:    [claude_sonnet, gemini_flash]
-    dialogue:   [claude_sonnet, gemini_flash, groq_llama]
-    fast_text:  [groq_llama, gemini_flash]
+    # item_bank/session/dialogue/fast_text are NOT listed here - see ai_primary_provider/
+    # ai_fallback_provider above and gateway.py's _resolve_dynamic_chain().
     embeddings: [gemini_embed]
-    ocr:        [gemini_flash, claude_sonnet]   # dormant until features.ocr
+    ocr:        [gemini, claude]   # dormant until features.ocr
   models:
-    gemini_flash:  { model: "gemini-flash-latest", timeout_s: 60 }   # gemini-2.5-flash confirmed 404/deprecated for this key at M4; 25s timed out on a real 12-15 item structured generation (docs/MEMORY.md)
-    claude_sonnet: { model: "claude-sonnet-4-6", timeout_s: 40 }
-    groq_llama:    { model: "llama-3.3-70b-versatile", timeout_s: 10 }
-    gemini_embed:  { model: "gemini-embedding-001", timeout_s: 10 }
+    # All 4 comparable providers + claude (dormant, excluded from the primary/fallback
+    # comparison - same as production leaving ANTHROPIC_API_KEY unconfigured since M4) tuned for
+    # deterministic structured JSON generation, not open-ended chat: low temperature everywhere,
+    # no thinking/extended-reasoning modes enabled anywhere (see each provider adapter's own
+    # comment for provider-specific reasoning).
+    groq:        { model: "llama-3.3-70b-versatile", timeout_s: 10, temperature: 0.3 }
+    gemini:      { model: "gemini-flash-latest", timeout_s: 60, temperature: 0.3 }   # gemini-2.5-flash confirmed 404/deprecated for this key at M4; 25s timed out on a real 12-15 item structured generation (docs/MEMORY.md)
+    cerebras:    { model: "gpt-oss-120b", timeout_s: 15, temperature: 0.2 }   # llama-3.3-70b (originally specified) confirmed 404/no longer on this key's model list at onboarding time via GET /v1/models: real available set was [gpt-oss-120b, zai-glm-4.7, gemma-4-31b] - gpt-oss-120b picked as the largest/strongest of the 3; re-verify before relying on it long-term, Cerebras's supported model list changes
+    deepseek:    { model: "deepseek-chat", timeout_s: 30, temperature: 0.2 }   # deepseek-chat (general-purpose), never deepseek-reasoner - thinking mode explicitly disabled in apps/api/app/ai/providers/deepseek.py
+    claude:      { model: "claude-sonnet-4-6", timeout_s: 40, temperature: 0.3 }
+    gemini_embed: { model: "gemini-embedding-001", timeout_s: 10 }
   cache: { enabled: true, prompt_version: "v1", demo_mode: false }
   quotas: { max_concurrent_calls: 4, per_institution_daily_tokens: 2000000 }
   item_bank: { min_items: 12, max_items: 15 }
