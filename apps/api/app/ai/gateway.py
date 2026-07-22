@@ -46,7 +46,12 @@ _COMPARABLE_PROVIDERS = ["groq", "gemini", "cerebras", "deepseek"]
 
 # Tasks whose provider order is resolved dynamically from ai_primary_provider/ai_fallback_provider
 # instead of a static config/ai.yaml list - see _resolve_dynamic_chain().
-_DYNAMIC_CHAIN_TASKS = {"item_bank", "session", "dialogue", "fast_text"}
+# "segment" (M5, prompts/segment.md) added here - the task name must match the prompt filename
+# (_load_system_prompt below), and "segment" is what M5's planner actually calls. "session" was
+# pre-built here at M4/PR#7 anticipating this need but guessed the task name; left in place and
+# dormant (not removed) rather than reused, since M5's per-student composition layer (the bridge
+# card) turned out cheap enough to template deterministically - no LLM call, no task name needed.
+_DYNAMIC_CHAIN_TASKS = {"item_bank", "session", "segment", "dialogue", "fast_text"}
 
 
 def _resolve_dynamic_chain() -> list[str]:

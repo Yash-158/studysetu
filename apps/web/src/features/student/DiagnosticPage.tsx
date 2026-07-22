@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { type DiagnosticReview, type DiagnosticStart, answerDiagnostic, getDiagnosticReview, startDiagnostic } from './api'
@@ -7,15 +7,32 @@ import { type DiagnosticReview, type DiagnosticStart, answerDiagnostic, getDiagn
 // deferred to the end-of-probe review). Plain rotating copy, not AI-generated.
 const NEUTRAL_ACKS = ['Got it.', 'Noted.', 'Thanks, recorded.', 'Got your answer.', 'Noted, moving on.']
 
-export function DiagnosticPage({ topicId, topicTitle, onBack }: { topicId: string; topicTitle: string; onBack: () => void }) {
+export function DiagnosticPage({
+  topicId,
+  topicTitle,
+  onBack,
+  onStartSession,
+}: {
+  topicId: string
+  topicTitle: string
+  onBack: () => void
+  onStartSession: () => void
+}) {
   const [probe, setProbe] = useState<DiagnosticStart | null>(null)
   const [index, setIndex] = useState(0)
   const [ack, setAck] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [review, setReview] = useState<DiagnosticReview | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Guards against a real bug, not just a StrictMode dev artifact: without it, two overlapping
+  // calls to startDiagnostic (React 18 StrictMode's double-invoke in dev, or a genuine fast
+  // double-render in production) create TWO diagnostic_sessions rows, and answers can split
+  // across them as each POST resolves - discovered building M5's e2e spec, real for any caller.
+  const startedRef = useRef(false)
 
   useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
     startDiagnostic(topicId)
       .then(setProbe)
       .catch((err) => setError((err as { message?: string }).message ?? 'Could not start the diagnostic'))
@@ -78,7 +95,8 @@ export function DiagnosticPage({ topicId, topicTitle, onBack }: { topicId: strin
             ))}
           </ul>
         </Card>
-        <Button onClick={onBack}>Done</Button>
+        <Button onClick={onStartSession}>Start my personalized session</Button>
+        <Button variant="ghost" onClick={onBack}>Back to subject</Button>
       </div>
     )
   }
