@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, SmallInteger, String, text
+from sqlalchemy import ARRAY, BigInteger, Boolean, DateTime, FetchedValue, ForeignKey, Integer, SmallInteger, String, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import JSONB, REAL, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -300,6 +300,46 @@ class MasteryHistory(Base):
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
 
+class LearningSession(Base):
+    __tablename__ = "learning_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    topic_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    diagnostic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("diagnostic_sessions.id"))
+    plan: Mapped[dict] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(session_status_enum, default="in_progress")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Event(Base):
+    """Read-mostly mapping onto the append-only timeline ledger (RULES #3) - writes go through
+    record_event()'s raw INSERT below, never through this class, so ingest_id/server_ts defaults
+    stay exactly what the migration specifies. ingest_id (a real bigint IDENTITY column) is the
+    reliable insertion-order tiebreaker: occurred_at/server_ts both use now(), which Postgres holds
+    stable for the whole transaction - several events emitted in one request (e.g. session_started
+    + multiple revision_injected rows) can share an identical timestamp, so anything that needs
+    true emission order (the M5 GATE's causal-chain proof) must order by ingest_id, not time."""
+    __tablename__ = "events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    # FetchedValue(), not a plain mapped_column - this is a GENERATED ALWAYS AS IDENTITY column
+    # (Postgres rejects any explicit INSERT value, even NULL); FetchedValue() tells the ORM the
+    # database supplies it and to never include it in an INSERT statement's column list.
+    ingest_id: Mapped[int] = mapped_column(BigInteger, server_default=FetchedValue())
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    event_type: Mapped[str] = mapped_column(String)
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"))
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    ref_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    payload: Mapped[dict] = mapped_column(JSONB)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    server_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
 class GeneratedArtifact(Base):
     __tablename__ = "generated_artifacts"
 
@@ -320,9 +360,13 @@ class GeneratedArtifact(Base):
 
 
 class AiInvocation(Base):
+    """ingest_id (0008): a real monotonic tiebreaker for emission order - created_at alone ties
+    within a transaction (Postgres holds now() stable for its whole duration), which is exactly
+    what made tests/test_m4_audit.py's provider-order assertions flaky (see docs/DATABASE.md 0008)."""
     __tablename__ = "ai_invocations"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    ingest_id: Mapped[int] = mapped_column(BigInteger, server_default=FetchedValue())
     task: Mapped[str] = mapped_column(String)
     provider: Mapped[str] = mapped_column(String)
     model: Mapped[str] = mapped_column(String)
