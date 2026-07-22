@@ -17,6 +17,7 @@ from typing import Callable
 
 from loguru import logger
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.providers import ProviderError
@@ -192,20 +193,42 @@ async def generate(
                 logger.warning("ai gateway parse failure task={} provider={} attempt={}", task, model_key, attempt)
                 continue  # same-provider retry
 
-            artifact = GeneratedArtifact(
-                id=uuid.uuid4(), scope=scope, artifact_type=artifact_type, topic_id=topic_id, user_id=user_id,
-                cache_key=cache_key, content=parsed, source_hash=source_hash, prompt_version=prompt_version,
-                model=cfg.model, tokens=result.input_tokens + result.output_tokens,
+            # Race-safe upsert, not db.add()+flush(): two concurrent requests can both pass the
+            # cache_key lookup above as a miss (classic check-then-insert TOCTOU - real under
+            # legitimate load, e.g. two students opening the same fresh topic at once, not just a
+            # dev-mode StrictMode double-effect artifact that's how this was first caught) and
+            # both reach this INSERT. ON CONFLICT DO NOTHING makes the loser's write a no-op
+            # instead of an unhandled IntegrityError; it then reads back the WINNER's row and
+            # reports its own attempt as a genuine cache hit rather than crashing the request.
+            artifact_id = uuid.uuid4()
+            insert_stmt = (
+                pg_insert(GeneratedArtifact)
+                .values(
+                    id=artifact_id, scope=scope, artifact_type=artifact_type, topic_id=topic_id, user_id=user_id,
+                    cache_key=cache_key, content=parsed, source_hash=source_hash, prompt_version=prompt_version,
+                    model=cfg.model, tokens=result.input_tokens + result.output_tokens,
+                )
+                .on_conflict_do_nothing(index_elements=["cache_key"])
+                .returning(GeneratedArtifact.id)
             )
-            db.add(artifact)
-            await db.flush()  # written BEFORE being shown to any caller (RULES.md #4)
+            won_id = (await db.execute(insert_stmt)).scalar_one_or_none()
 
+            if won_id is not None:
+                await _log_invocation(
+                    db, task=task, provider=model_key, model=cfg.model, cache_hit=False, success=True,
+                    ref_artifact=won_id, latency_ms=latency_ms,
+                    input_tokens=result.input_tokens, output_tokens=result.output_tokens,
+                )
+                return GenerateResult(content=parsed, cache_hit=False, artifact_id=won_id)
+
+            existing = (
+                await db.execute(select(GeneratedArtifact).where(GeneratedArtifact.cache_key == cache_key))
+            ).scalar_one()
             await _log_invocation(
-                db, task=task, provider=model_key, model=cfg.model, cache_hit=False, success=True,
-                ref_artifact=artifact.id, latency_ms=latency_ms,
-                input_tokens=result.input_tokens, output_tokens=result.output_tokens,
+                db, task=task, provider="cache", model=existing.model or "unknown",
+                cache_hit=True, success=True, ref_artifact=existing.id,
             )
-            return GenerateResult(content=parsed, cache_hit=False, artifact_id=artifact.id)
+            return GenerateResult(content=existing.content, cache_hit=True, artifact_id=existing.id)
 
         logger.warning("ai gateway failing over from {} for task={}: {}", model_key, task, last_error)
 
