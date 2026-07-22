@@ -86,9 +86,14 @@ async def _user(client: AsyncClient, slug: str, role: str) -> tuple[str, str]:
 
 
 async def _invocations_since(db, task: str, since: datetime) -> list[AiInvocation]:
+    # ingest_id (docs/DATABASE.md 0008) is the required tiebreaker: created_at alone ties when
+    # several rows are logged within one ai.generate() call's transaction (Postgres holds now()
+    # stable for the whole transaction), which is what made this query's order non-deterministic.
     rows = (
         await db.execute(
-            select(AiInvocation).where(AiInvocation.task == task, AiInvocation.created_at >= since).order_by(AiInvocation.created_at)
+            select(AiInvocation)
+            .where(AiInvocation.task == task, AiInvocation.created_at >= since)
+            .order_by(AiInvocation.created_at, AiInvocation.ingest_id)
         )
     ).scalars().all()
     return rows

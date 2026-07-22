@@ -3,6 +3,8 @@ Source of truth for the database. Implemented exactly by db/migrations/0001-0006
 
 **0007 (M2):** `users.issued_at timestamptz not null default now()`, backfilled from `created_at` for pre-existing rows. Activation-code TTL (`modules/auth.py`) is measured from `issued_at`, not `created_at` - this was a known M1 gap (see MEMORY.md) that broke once M2's reissue-code flow needed to set a fresh TTL clock on an already-existing account independent of when it was first created.
 
+**0008 (pre-M5 bugfix, found while building M5's session planner, unrelated to it):** `ai_invocations.ingest_id bigint GENERATED ALWAYS AS IDENTITY`. `created_at`'s `now()` is transaction-stable in Postgres - several ai_invocations rows logged within one `ai.generate()` call (a real attempt plus its failover, or a cache lookup plus a generation) can share an identical timestamp, so `ORDER BY created_at` alone cannot reliably prove attempt order. `ingest_id` is the same fix already applied to `events` for M5's own causal-chain ordering (see this doc's `events` entry and MEMORY.md) - a real monotonic tiebreaker, not a schema change invented for cosmetic reasons. `tests/test_m4_audit.py`'s `_invocations_since()` now orders by `(created_at, ingest_id)`.
+
 ## 1. ER Diagram
 ```mermaid
 erDiagram

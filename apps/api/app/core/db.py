@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, SmallInteger, String, text
+from sqlalchemy import ARRAY, BigInteger, Boolean, DateTime, FetchedValue, ForeignKey, Integer, SmallInteger, String, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import JSONB, REAL, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -320,9 +320,13 @@ class GeneratedArtifact(Base):
 
 
 class AiInvocation(Base):
+    """ingest_id (0008): a real monotonic tiebreaker for emission order - created_at alone ties
+    within a transaction (Postgres holds now() stable for its whole duration), which is exactly
+    what made tests/test_m4_audit.py's provider-order assertions flaky (see docs/DATABASE.md 0008)."""
     __tablename__ = "ai_invocations"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    ingest_id: Mapped[int] = mapped_column(BigInteger, server_default=FetchedValue())
     task: Mapped[str] = mapped_column(String)
     provider: Mapped[str] = mapped_column(String)
     model: Mapped[str] = mapped_column(String)
