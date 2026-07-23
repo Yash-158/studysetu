@@ -10,23 +10,25 @@ const ROWS = [
 export function Benefits() {
   return (
     <section id="about">
-      <p className="landing-section-eyebrow">Why It's Different</p>
-      <h2 className="landing-section-title">Traditional revision vs. StudySetu</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="landing-compare">
-          <thead>
-            <tr><th></th><th>Traditional revision</th><th>StudySetu</th></tr>
-          </thead>
-          <tbody>
-            {ROWS.map((r) => (
-              <tr key={r.topic}>
-                <td><strong>{r.topic}</strong></td>
-                <td className="landing-compare-no">{r.traditional}</td>
-                <td className="landing-compare-yes">{r.studysetu}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="landing-container">
+        <p className="landing-section-eyebrow">Why It's Different</p>
+        <h2 className="landing-section-title">Traditional revision vs. StudySetu</h2>
+        <div className="landing-compare-scroll">
+          <table className="landing-compare">
+            <thead>
+              <tr><th></th><th>Traditional revision</th><th>StudySetu</th></tr>
+            </thead>
+            <tbody>
+              {ROWS.map((r) => (
+                <tr key={r.topic}>
+                  <td><strong>{r.topic}</strong></td>
+                  <td className="landing-compare-no">{r.traditional}</td>
+                  <td className="landing-compare-yes">{r.studysetu}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   )

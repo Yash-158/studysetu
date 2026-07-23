@@ -3,6 +3,7 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import {
   type Chapter,
+  type Enrollment,
   type Pool,
   type PoolDelta,
   type SubjectDetail,
@@ -15,9 +16,11 @@ import {
   deleteBlock,
   deleteEdge,
   getSubject,
+  listEnrollments,
   listPools,
   poolDeltas,
   publishChapter,
+  removeEnrollment,
   reorderBlocks,
   reorderChapters,
   syncPool,
@@ -31,6 +34,19 @@ function move<T>(ids: T[], index: number, dir: -1 | 1): T[] {
   return next
 }
 
+// M6-remediation Phase 2: one continuous, clearly-staged builder instead of a maze of cards on
+// one long scroll - real hide/show stages (not a wizard: DESIGN.md's "no wizard >1 step" law
+// stays intact since every stage is reachable at any time, nothing is gated behind completing a
+// previous one; a teacher can jump straight to Roster on a subject that already has its structure
+// built, same as today, just organized).
+type Stage = 'structure' | 'prerequisites' | 'materials' | 'roster'
+const STAGES: { key: Stage; label: string }[] = [
+  { key: 'structure', label: 'Structure' },
+  { key: 'prerequisites', label: 'Prerequisites' },
+  { key: 'materials', label: 'Materials' },
+  { key: 'roster', label: 'Roster' },
+]
+
 export function SubjectBuilderPage({
   subjectId,
   onBack,
@@ -40,9 +56,11 @@ export function SubjectBuilderPage({
   onBack: () => void
   onSelectTopic: (topicId: string, topicTitle: string) => void
 }) {
+  const [stage, setStage] = useState<Stage>('structure')
   const [subject, setSubject] = useState<SubjectDetail | null>(null)
   const [pools, setPools] = useState<Pool[]>([])
   const [deltas, setDeltas] = useState<PoolDelta[]>([])
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const [chapterTitle, setChapterTitle] = useState('')
@@ -62,9 +80,10 @@ export function SubjectBuilderPage({
   const [assessmentTitleByChapter, setAssessmentTitleByChapter] = useState<Record<string, string>>({})
 
   async function refresh() {
-    const [s, d] = await Promise.all([getSubject(subjectId), poolDeltas(subjectId)])
+    const [s, d, e] = await Promise.all([getSubject(subjectId), poolDeltas(subjectId), listEnrollments(subjectId)])
     setSubject(s)
     setDeltas(d)
+    setEnrollments(e)
     if (!materialOwnerId) setMaterialOwnerId(s.id)
   }
 
@@ -227,6 +246,16 @@ export function SubjectBuilderPage({
     }
   }
 
+  async function onRemoveEnrollment(userId: string) {
+    setError(null)
+    try {
+      await removeEnrollment(subjectId, userId)
+      await refresh()
+    } catch (err) {
+      fail(err, 'Failed to remove this student')
+    }
+  }
+
   if (!subject) return <p>Loading…</p>
 
   return (
@@ -250,6 +279,16 @@ export function SubjectBuilderPage({
         </Card>
       ))}
 
+      <div className="ss-tabs ss-no-print">
+        {STAGES.map((s) => (
+          <button key={s.key} className={`ss-tab ${stage === s.key ? 'ss-tab-active' : ''}`} onClick={() => setStage(s.key)}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {stage === 'structure' && (
+      <>
       <Card>
         <h2>Chapters</h2>
         {subject.chapters.map((chapter, ci) => (
@@ -323,7 +362,10 @@ export function SubjectBuilderPage({
           <Button type="submit">Add topic</Button>
         </form>
       </Card>
+      </>
+      )}
 
+      {stage === 'prerequisites' && (
       <Card>
         <h2>Prerequisite links</h2>
         <ul>
@@ -356,7 +398,9 @@ export function SubjectBuilderPage({
           <Button type="submit">Add link</Button>
         </form>
       </Card>
+      )}
 
+      {stage === 'materials' && (
       <Card>
         <h2>Materials</h2>
         <ul>
@@ -402,7 +446,10 @@ export function SubjectBuilderPage({
           <Button type="submit">Upload</Button>
         </form>
       </Card>
+      )}
 
+      {stage === 'roster' && (
+      <>
       <Card>
         <h2>Pools</h2>
         <div>
@@ -413,6 +460,21 @@ export function SubjectBuilderPage({
           <Button onClick={onAttachPool} disabled={!selectedPool}>Attach pool</Button>
         </div>
       </Card>
+
+      <Card>
+        <h2>Enrollments</h2>
+        {enrollments.length === 0 && <p>No students enrolled yet - attach a pool above.</p>}
+        <ul>
+          {enrollments.map((e) => (
+            <li key={e.id}>
+              {e.display_name} {e.roll_number ? `(${e.roll_number})` : ''}{' '}
+              <Button aria-label={`Remove ${e.display_name}`} variant="ghost" onClick={() => onRemoveEnrollment(e.id)}>Remove</Button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+      </>
+      )}
     </div>
   )
 }

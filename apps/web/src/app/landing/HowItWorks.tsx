@@ -1,6 +1,9 @@
+import { StepFlow } from './StepFlow'
+
 const FLOWS = [
   {
     role: 'Teacher',
+    icon: '✎',
     steps: [
       'Build a subject as chapters of ordered topics and checkpoints',
       'Attach materials - PDFs, links, notes - that ground everything generated',
@@ -10,6 +13,7 @@ const FLOWS = [
   },
   {
     role: 'Student',
+    icon: '◈',
     steps: [
       'Open a topic and take the 5-question diagnostic',
       'Answer with neutral acknowledgment - no score pressure mid-probe',
@@ -19,6 +23,7 @@ const FLOWS = [
   },
   {
     role: 'Institution admin',
+    icon: '▦',
     steps: [
       'Import a roster by CSV - accounts and activation codes issued at once',
       'Group students into pools (a section, a batch, a cohort)',
@@ -31,18 +36,19 @@ const FLOWS = [
 export function HowItWorks() {
   return (
     <section id="how-it-works">
-      <p className="landing-section-eyebrow">How It Works</p>
-      <h2 className="landing-section-title">Three roles, one connected loop</h2>
-      <p className="landing-section-lead">Nobody has to coordinate manually - the same data feeds every role's view.</p>
-      <div className="landing-flow-grid">
-        {FLOWS.map((f) => (
-          <div className="landing-flow-card" key={f.role}>
-            <h3>{f.role}</h3>
-            <ol>
-              {f.steps.map((s) => <li key={s}>{s}</li>)}
-            </ol>
-          </div>
-        ))}
+      <div className="landing-container">
+        <p className="landing-section-eyebrow">How It Works</p>
+        <h2 className="landing-section-title">Three roles, one connected loop</h2>
+        <p className="landing-section-lead">Nobody has to coordinate manually - the same data feeds every role's view.</p>
+        <div className="landing-flow-grid">
+          {FLOWS.map((f) => (
+            <div className="landing-flow-card" key={f.role}>
+              <div className="landing-card-icon" aria-hidden="true">{f.icon}</div>
+              <h3>{f.role}</h3>
+              <StepFlow steps={f.steps} />
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

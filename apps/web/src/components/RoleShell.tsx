@@ -11,10 +11,15 @@ export function RoleShell({
   roleLabel,
   children,
   wide = false,
+  sidebar,
 }: {
   roleLabel: string
   children?: ReactNode
   wide?: boolean
+  /** M6-remediation Phase 2: an ERP-style persistent left nav (currently teacher-only - Subjects/
+   * Analytics). Optional so student/admin shells are untouched - they still get the plain centered
+   * container. */
+  sidebar?: ReactNode
 }) {
   const navigate = useNavigate()
   const user = useAuth((s) => s.user)
@@ -37,9 +42,16 @@ export function RoleShell({
           </Button>
         </span>
       </header>
-      <div className={wide ? 'ss-container-wide' : 'ss-container'}>
-        {children ?? <p>Your {roleLabel} shell will grow here starting M2.</p>}
-      </div>
+      {sidebar ? (
+        <div className="ss-workspace">
+          <nav className="ss-sidebar" aria-label={`${roleLabel} navigation`}>{sidebar}</nav>
+          <div className="ss-workspace-main">{children}</div>
+        </div>
+      ) : (
+        <div className={wide ? 'ss-container-wide' : 'ss-container'}>
+          {children ?? <p>Your {roleLabel} shell will grow here starting M2.</p>}
+        </div>
+      )}
     </div>
   )
 }

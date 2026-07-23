@@ -9,15 +9,17 @@ const FAQS = [
 export function FAQ() {
   return (
     <section id="faq">
-      <p className="landing-section-eyebrow">FAQ</p>
-      <h2 className="landing-section-title">Questions people actually ask</h2>
-      <div>
-        {FAQS.map((f) => (
-          <details className="landing-faq-item" key={f.q}>
-            <summary>{f.q}</summary>
-            <p>{f.a}</p>
-          </details>
-        ))}
+      <div className="landing-container">
+        <p className="landing-section-eyebrow">FAQ</p>
+        <h2 className="landing-section-title">Questions people actually ask</h2>
+        <div>
+          {FAQS.map((f) => (
+            <details className="landing-faq-item" key={f.q}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   )

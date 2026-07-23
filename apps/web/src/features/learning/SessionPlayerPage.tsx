@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
-import { type SafeOption, type SessionCard, answerPractice, completeSession, startSession } from '../student/api'
+import { type LessonSection, type SafeOption, type SessionCard, answerPractice, completeSession, startSession } from '../student/api'
+import { DoubtBox } from './DoubtBox'
 
 // The S16 recipe card types, flattened into a linear step list for the player - a revision card's
 // nested practice_items become their own steps so navigation is uniform (one step, one screen).
@@ -9,7 +10,7 @@ type Step =
   | { kind: 'bridge'; text: string; cardIndex: number }
   | { kind: 'revision_intro'; topicTitle: string; explanation: string; cardIndex: number }
   | { kind: 'practice'; itemId: string; stem: string; options: SafeOption[]; cardIndex: number }
-  | { kind: 'explanation'; text: string; cardIndex: number }
+  | { kind: 'explanation'; sections: LessonSection[]; cardIndex: number }
   | { kind: 'worked_example'; steps: string[]; cardIndex: number }
   | { kind: 'contrast'; misconceptionTitle: string; text: string; cardIndex: number }
   | { kind: 'summary'; bullets: string[]; cardIndex: number }
@@ -24,7 +25,7 @@ function flatten(cards: SessionCard[]): Step[] {
       for (const p of card.practice_items) {
         steps.push({ kind: 'practice', itemId: p.item_id, stem: p.stem, options: p.options, cardIndex })
       }
-    } else if (card.type === 'explanation') steps.push({ kind: 'explanation', text: card.text, cardIndex })
+    } else if (card.type === 'explanation') steps.push({ kind: 'explanation', sections: card.sections, cardIndex })
     else if (card.type === 'worked_example') steps.push({ kind: 'worked_example', steps: card.steps, cardIndex })
     else if (card.type === 'practice') steps.push({ kind: 'practice', itemId: card.item_id, stem: card.stem, options: card.options, cardIndex })
     else if (card.type === 'contrast') steps.push({ kind: 'contrast', misconceptionTitle: card.misconception_title, text: card.text, cardIndex })
@@ -122,16 +123,21 @@ export function SessionPlayerPage({ topicId, topicTitle, onDone }: { topicId: st
           </>
         )}
         {step.kind === 'explanation' && (
-          <>
-            <h3>{topicTitle}</h3>
-            <p>{step.text}</p>
-          </>
+          <div className="ss-lesson">
+            <h2 className="ss-lesson-title">{topicTitle}</h2>
+            {step.sections.map((section, i) => (
+              <section key={i} className="ss-lesson-section">
+                <h3>{section.heading}</h3>
+                <p>{section.body}</p>
+              </section>
+            ))}
+          </div>
         )}
         {step.kind === 'worked_example' && (
-          <>
+          <div className="ss-callout">
             <h3>Worked example</h3>
             <ol>{step.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-          </>
+          </div>
         )}
         {step.kind === 'contrast' && (
           <>
@@ -155,11 +161,13 @@ export function SessionPlayerPage({ topicId, topicTitle, onDone }: { topicId: st
           <>
             <p><strong>{step.stem}</strong></p>
             {reasoning ? (
-              <p aria-live="polite">{reasoning.isCorrect ? '✓ Correct. ' : '✗ Not quite. '}{reasoning.explanation}</p>
+              <div className={`ss-reasoning ${reasoning.isCorrect ? 'ss-reasoning-correct' : 'ss-reasoning-wrong'}`}>
+                <p aria-live="polite">{reasoning.isCorrect ? '✓ Correct. ' : '✗ Not quite. '}{reasoning.explanation}</p>
+              </div>
             ) : (
-              <ul>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
                 {step.options.map((option) => (
-                  <li key={option.id}>
+                  <li key={option.id} className="ss-quiz-option">
                     <Button variant="ghost" disabled={submitting} onClick={() => onAnswer(step.itemId, option.id)}>{option.body}</Button>
                   </li>
                 ))}
@@ -168,6 +176,7 @@ export function SessionPlayerPage({ topicId, topicTitle, onDone }: { topicId: st
           </>
         )}
       </Card>
+      {sessionId && <DoubtBox sessionId={sessionId} />}
       {(step.kind !== 'practice' || reasoning) && (
         <Button onClick={onNext}>{index >= steps.length - 1 ? 'Finish session' : 'Next'}</Button>
       )}

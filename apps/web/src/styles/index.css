@@ -60,10 +60,17 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
   font-size: 16px;
   min-height: 44px; /* WCAG AA tap-target minimum (DESIGN.md) - a fixed a11y constant, not a themed spacing value */
   cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
-.ss-button-primary { background: var(--color-button-primary-bg); color: var(--color-on-primary); }
+.ss-button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ss-button-primary { background: var(--color-button-primary-bg); color: var(--color-on-primary); box-shadow: var(--shadow-sm); }
+.ss-button-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--color-button-primary-bg) 88%, black); box-shadow: var(--shadow-md); }
+.ss-button-primary:active:not(:disabled) { background: color-mix(in srgb, var(--color-button-primary-bg) 78%, black); box-shadow: var(--shadow-sm); transform: translateY(1px); }
 .ss-button-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.ss-button-ghost { background: transparent; color: var(--color-neutral-900); }
+.ss-button-ghost { background: transparent; color: var(--color-neutral-900); border: 1px solid var(--color-neutral-300); }
+.ss-button-ghost:hover:not(:disabled) { background: var(--color-neutral-100); border-color: var(--color-neutral-500); }
+.ss-button-ghost:active:not(:disabled) { background: var(--color-neutral-200); transform: translateY(1px); }
+.ss-button-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .ss-error {
   color: var(--color-error-text);
@@ -97,7 +104,86 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 
 .ss-field textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-neutral-300); font-size: 14px; font-family: monospace; }
 
+/* M6-remediation Phase 5: the doubt-chat textarea is a student's natural-language question, not
+   typed note/config content - the shared .ss-field textarea's monospace is deliberately wrong here. */
+.ss-doubtbox textarea { font-family: var(--font-body); font-size: 16px; }
+.ss-doubtbox { margin-top: var(--space-md); }
+
 .ss-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 4px solid var(--color-warning); } /* 12px gap has no matching scale step */
+
+/* M6-remediation: the personalized session's "core" lesson now reads as a real short lecture
+   (prompts/segment.md), not a single paragraph - real typographic hierarchy for its sections, plus
+   a distinct callout treatment for the worked example so it reads as a highlighted aside, not just
+   another paragraph. */
+.ss-lesson { display: flex; flex-direction: column; gap: var(--space-lg); }
+.ss-lesson-title { margin: 0; }
+.ss-lesson-section { display: flex; flex-direction: column; gap: var(--space-xs); }
+.ss-lesson-section h3 { margin: 0; font-size: 20px; }
+.ss-lesson-section p { margin: 0; line-height: 1.6; }
+.ss-callout {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border-left: 4px solid var(--color-primary); /* 4px matches .ss-banner's own border-left precedent */
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+.ss-callout h3 { margin-top: 0; }
+.ss-callout ol { margin-bottom: 0; line-height: 1.6; }
+
+/* M6-remediation Phase 3: the diagnostic probe + review screen as an actual quiz UI - option
+   cards instead of bare bullet points, a neutral "selected" state during the LIVE probe (never
+   correct/incorrect - S3's deferred-feedback rule is untouched, this is a pending-choice
+   indicator only), and correct/wrong/neutral coloring ONLY on the end-of-probe review, where
+   correctness is deliberately revealed by design. Reused as-is by SessionPlayerPage's practice
+   step (M5, instant reasoning - a different, already-instant-feedback context, so its color use
+   there is meaningful too, not a rule violation). */
+.ss-progress-bar { display: flex; gap: var(--space-xs); }
+.ss-progress-segment { flex: 1; height: 6px; border-radius: var(--radius-full); background: var(--color-neutral-200); }
+.ss-progress-segment-filled { background: var(--color-primary); }
+
+.ss-quiz-option {
+  list-style: none;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ss-quiz-option:last-child { margin-bottom: 0; }
+.ss-quiz-option .ss-button { display: block; width: 100%; text-align: left; border-radius: var(--radius-md); }
+.ss-quiz-option-selected { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+/* Raw success/error swatches are fine here (border + icon glyph, not small text) - DESIGN.md's
+   accessibility rule reserves the *_text tokens specifically for small colored TEXT. */
+.ss-quiz-option-correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 10%, transparent); padding: var(--space-sm) var(--space-md); display: flex; gap: var(--space-xs); align-items: baseline; }
+.ss-quiz-option-wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 10%, transparent); padding: var(--space-sm) var(--space-md); display: flex; gap: var(--space-xs); align-items: baseline; }
+.ss-quiz-option-neutral { opacity: 0.7; padding: var(--space-sm) var(--space-md); display: flex; gap: var(--space-xs); align-items: baseline; }
+.ss-quiz-option-icon { display: inline-block; width: 18px; font-weight: 700; flex-shrink: 0; }
+
+.ss-score-line { font-size: 25px; font-weight: 600; font-family: var(--font-display); }
+
+.ss-reasoning {
+  background: var(--color-neutral-100);
+  border-left: 4px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-top: var(--space-sm);
+}
+.ss-reasoning p { margin: 0; line-height: 1.6; }
+.ss-reasoning-correct { border-left-color: var(--color-success); }
+.ss-reasoning-wrong { border-left-color: var(--color-error); }
+
+/* M6-remediation Phase 2: ERP-style persistent left nav for the teacher workspace, replacing the
+   top ss-tabs switcher - DESIGN.md's "same component library, two layout shells" extended with a
+   third layout mode (sidebar), opt-in via RoleShell's `sidebar` prop so student/admin are
+   untouched. Teacher UI is 1280px-first (DESIGN.md) - a fixed-width sidebar is appropriate, no
+   collapsing/hamburger behavior added for a context that was never mobile-first. */
+.ss-workspace { display: flex; align-items: flex-start; }
+.ss-sidebar { width: 200px; flex-shrink: 0; border-right: 1px solid var(--color-neutral-200); padding: var(--space-lg) var(--space-sm); }
+.ss-sidebar-nav { display: flex; flex-direction: column; gap: var(--space-xs); }
+.ss-sidebar-link {
+  display: block; width: 100%; text-align: left; background: transparent; border: none; cursor: pointer;
+  padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); font-size: 16px; color: var(--color-neutral-900);
+}
+.ss-sidebar-link-active { background: color-mix(in srgb, var(--color-primary) 10%, transparent); color: var(--color-primary); font-weight: 600; }
+.ss-workspace-main { flex: 1; min-width: 0; max-width: 960px; padding: var(--space-lg) var(--space-md); }
 
 /* Logo size tokens - the two values to tune if the logo still looks wrong, nothing else needs to
    change. --logo-size-nav drives EVERY persistent nav bar (RoleShell's header AND the landing
