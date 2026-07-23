@@ -187,7 +187,12 @@ test.describe.serial('M5 GATE: real weak Transforms -> injected revision -> sess
 
     // Step 3: the personalized session - the injected Transforms revision must appear at the head.
     await page.getByRole('button', { name: 'Start my personalized session' }).click()
-    await expect(page.getByRole('heading', { name: /Quick refresher: Transforms/ })).toBeVisible({ timeout: 200_000 })
+    // A fresh session now correctly opens at the bridge card first (the resume-index fix), not
+    // skipping straight to the first practice/revision card - one Next click then reaches the
+    // injected Transforms revision, still at the head of the real lesson content.
+    await expect(page.getByText(/You scored \d\/5 on the probe/)).toBeVisible({ timeout: 200_000 })
+    await page.getByRole('button', { name: 'Next' }).click()
+    await expect(page.getByRole('heading', { name: /Quick refresher: Transforms/ })).toBeVisible()
 
     await playSessionToCompletion(page)
     await expect(page.getByRole('heading', { name: /session complete/ })).toBeVisible()
