@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
+import { ProgressBar } from '../../components/ProgressBar'
 import { type DiagnosticReview, type DiagnosticStart, answerDiagnostic, getDiagnosticReview, startDiagnostic } from './api'
 
 // Neutral, deterministic - never reveals correctness mid-probe (FEATURE_EXPLANATION S3: feedback
@@ -24,6 +25,9 @@ export function DiagnosticPage({
   const [submitting, setSubmitting] = useState(false)
   const [review, setReview] = useState<DiagnosticReview | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Neutral "pending choice" highlight only - never correct/incorrect during the live probe
+  // (FEATURE_EXPLANATION S3: feedback stays deferred to the end-of-probe review, unchanged here).
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
   // Guards against a real bug, not just a StrictMode dev artifact: without it, two overlapping
   // calls to startDiagnostic (React 18 StrictMode's double-invoke in dev, or a genuine fast
   // double-render in production) create TWO diagnostic_sessions rows, and answers can split
@@ -41,6 +45,7 @@ export function DiagnosticPage({
 
   async function onSelect(optionId: string) {
     if (!probe || submitting) return
+    setSelectedOptionId(optionId)
     setSubmitting(true)
     setError(null)
     try {
@@ -52,9 +57,11 @@ export function DiagnosticPage({
         setReview(finalReview)
       } else {
         setIndex((i) => i + 1)
+        setSelectedOptionId(null)
       }
     } catch (err) {
       setError((err as { message?: string }).message ?? 'Failed to record your answer')
+      setSelectedOptionId(null)
     } finally {
       setSubmitting(false)
     }
@@ -71,20 +78,25 @@ export function DiagnosticPage({
     return (
       <div className="ss-stack">
         <h2>{topicTitle}: how you did</h2>
-        <p>{review.score} / {review.total} correct</p>
+        <p className="ss-score-line">{review.score} / {review.total} correct</p>
         {review.review.map((q, i) => (
           <Card key={q.item_id}>
             <h3>Q{i + 1}. {q.stem}</h3>
-            <ul>
-              {q.options.map((o) => (
-                <li key={o.id}>
-                  {o.is_correct ? '✓ ' : ''}
-                  {o.body}
-                  {o.id === q.chosen_option_id && ' (your answer)'}
-                </li>
-              ))}
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {q.options.map((o) => {
+                const isChosenWrong = o.id === q.chosen_option_id && !o.is_correct
+                const stateClass = o.is_correct ? 'ss-quiz-option-correct' : isChosenWrong ? 'ss-quiz-option-wrong' : 'ss-quiz-option-neutral'
+                return (
+                  <li key={o.id} className={`ss-quiz-option ${stateClass}`}>
+                    <span className="ss-quiz-option-icon" aria-hidden="true">{o.is_correct ? '✓' : isChosenWrong ? '✗' : ''}</span>
+                    <span>{o.body}{o.id === q.chosen_option_id && <span className="ss-status-pill"> your answer</span>}</span>
+                  </li>
+                )
+              })}
             </ul>
-            <p>{q.explanation}</p>
+            <div className="ss-reasoning">
+              <p>{q.explanation}</p>
+            </div>
           </Card>
         ))}
         <Card>
@@ -110,12 +122,13 @@ export function DiagnosticPage({
       <Button variant="ghost" onClick={onBack}>← Back to subject</Button>
       {error && <p className="ss-error">{error}</p>}
       <p>Question {index + 1} of {probe.items.length}</p>
+      <ProgressBar current={index + 1} total={probe.items.length} />
       {ack && <p aria-live="polite">{ack}</p>}
       <Card>
         <p><strong>{item.stem}</strong></p>
-        <ul>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
           {item.options.map((option) => (
-            <li key={option.id}>
+            <li key={option.id} className={`ss-quiz-option ${option.id === selectedOptionId ? 'ss-quiz-option-selected' : ''}`}>
               <Button variant="ghost" disabled={submitting} onClick={() => onSelect(option.id)}>{option.body}</Button>
             </li>
           ))}

@@ -9,15 +9,17 @@ const TESTIMONIALS = [
 export function Testimonials() {
   return (
     <section id="testimonials">
-      <p className="landing-section-eyebrow">What People Say</p>
-      <h2 className="landing-section-title">Early feedback</h2>
-      <div className="landing-testimonial-grid">
-        {TESTIMONIALS.map((t) => (
-          <div className="landing-testimonial" key={t.name}>
-            <p className="landing-quote">&ldquo;{t.quote}&rdquo;</p>
-            <p className="landing-attribution">{t.name} · {t.kind}</p>
-          </div>
-        ))}
+      <div className="landing-container">
+        <p className="landing-section-eyebrow">What People Say</p>
+        <h2 className="landing-section-title">Early feedback</h2>
+        <div className="landing-testimonial-grid">
+          {TESTIMONIALS.map((t) => (
+            <div className="landing-testimonial" key={t.name}>
+              <p className="landing-quote">&ldquo;{t.quote}&rdquo;</p>
+              <p className="landing-attribution">{t.name} · {t.kind}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

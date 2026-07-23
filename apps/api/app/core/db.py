@@ -37,6 +37,8 @@ artifact_type_enum = PgEnum(
     "item_bank", "segment", "summary", "cheatsheet", "flashcards", "session_plan",
     "doubt_reply", "assignment_feedback", "mentor_card", name="artifact_type", create_type=False,
 )
+doubt_status_enum = PgEnum("open", "explaining", "resolved", "abandoned", name="doubt_status", create_type=False)
+explain_mode_enum = PgEnum("socratic", "direct", name="explain_mode", create_type=False)
 
 
 class Base(DeclarativeBase):
@@ -357,6 +359,28 @@ class GeneratedArtifact(Base):
     flagged: Mapped[bool] = mapped_column(Boolean, default=False)
     hidden: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Doubt(Base):
+    """M6-remediation Phase 5: a genuine minimal slice of F11 (docs/FEATURE_EXPLANATION.md), not
+    the full M8 doubt/RAG feature - matched_topic_id is set deterministically from the student's
+    current session (they're already looking at the topic), not embedding-matched, so root_topic_id
+    (a prereq/root-gap walk) stays NULL and mode is always 'direct' (single-shot, never 'socratic'
+    multi-turn) for every row this phase creates. M8 extends this table, doesn't replace it."""
+    __tablename__ = "doubts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    subject_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("subjects.id"))
+    matched_topic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    root_topic_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id"))
+    raw_text: Mapped[str] = mapped_column(String)
+    mode: Mapped[str] = mapped_column(explain_mode_enum, default="direct")
+    status: Mapped[str] = mapped_column(doubt_status_enum, default="open")
+    transcript: Mapped[list] = mapped_column(JSONB, default=list)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
 
 
 class AiInvocation(Base):

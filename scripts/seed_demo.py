@@ -1,13 +1,19 @@
-"""StudySetu demo seeder (idempotent, <10s).
+"""StudySetu demo seeder (idempotent, <10s). LOCAL DEVELOPMENT ONLY - never run against
+studysetu.caffeineclause.tech or any production database.
 M1 scope: institution GLS-demo (slug gls-demo) + 3 users (admin, teacher Anvi, student Yash
-21BCE001), each `invited` with a fixed demo activation code so e2e/auth_roles.spec.ts and manual
-runbooks can activate them deterministically.
-M2 scope: pool CSE-3A + 8 more students (21BCE002-21BCE009), all fixed-code invited; Yash plus
-the 8 new students land in CSE-3A so the pool has a full, real cohort for M3's subject-attach demo.
+21BCE001).
+M2 scope: pool CSE-3A + 8 more students (21BCE002-21BCE009); Yash plus the 8 new students land in
+CSE-3A so the pool has a full, real cohort for M3's subject-attach demo.
 M3 scope: Anvi builds+publishes Digital Image Processing (DIP): 2 chapters, 5 topics, one
 Transforms->Frequency Filtering prerequisite edge, one assessment placeholder block, one real PDF
 material (written through StorageProvider + pypdf-extracted, not faked), CSE-3A pool attached so
-Yash + the 8 students land in subject_enrollments - matching the ROADMAP M3 GATE exactly."""
+Yash + the 8 students land in subject_enrollments - matching the ROADMAP M3 GATE exactly.
+Local-dev remediation (this pass): every seeded user, across every seeded institution, now gets
+the SAME fixed activation code and password and is seeded directly `status='active'` (password_hash
+already set) - no per-user activation step needed to log in locally. Fixed values live in
+FIXED_ACTIVATION_CODE / FIXED_PASSWORD below, same "hardcode it in this file" precedent this
+script already used for the old per-user demo activation codes - still local-only, not a RULES #10
+violation (that rule targets real secrets, not throwaway local fixtures)."""
 import asyncio
 import io
 import sys
@@ -41,37 +47,25 @@ from app.storage.local import LocalStorageProvider  # noqa: E402
 INSTITUTION_SLUG = "gls-demo"
 POOL_NAME = "CSE-3A"
 SUBJECT_CODE = "DIP"
+
+# LOCAL DEV ONLY - same fixed activation code + password for every seeded user, every seeded
+# institution. Never read from env, never used against production - this script has no
+# production-target option by design.
+FIXED_ACTIVATION_CODE = "00000000"
+FIXED_PASSWORD = "testpass123"
+
 DEMO_USERS = [
-    {
-        "role": "admin",
-        "display_name": "Admin",
-        "email": "admin@gls-demo.test",
-        "roll_number": None,
-        "activation_code": "11111111",
-    },
-    {
-        "role": "teacher",
-        "display_name": "Anvi",
-        "email": "anvi@gls-demo.test",
-        "roll_number": None,
-        "activation_code": "22222222",
-    },
-    {
-        "role": "student",
-        "display_name": "Yash",
-        "email": "yash@gls-demo.test",
-        "roll_number": "21BCE001",
-        "activation_code": "33333333",
-    },
+    {"role": "admin", "display_name": "Admin", "email": "admin@gls-demo.test", "roll_number": None},
+    {"role": "teacher", "display_name": "Anvi", "email": "anvi@gls-demo.test", "roll_number": None},
+    {"role": "student", "display_name": "Yash", "email": "yash@gls-demo.test", "roll_number": "21BCE001"},
 ]
-# M2: 8 more CSE-3A students, roll numbers 21BCE002-009, fixed activation codes 40000002-40000009.
+# M2: 8 more CSE-3A students, roll numbers 21BCE002-009.
 POOL_STUDENTS = [
     {
         "role": "student",
         "display_name": f"Student {n}",
         "email": f"student{n}@gls-demo.test",
         "roll_number": f"21BCE{n:03d}",
-        "activation_code": f"4000000{n - 1}",
     }
     for n in range(2, 10)
 ]
@@ -225,13 +219,13 @@ async def seed() -> None:
                     display_name=spec["display_name"],
                     roll_number=spec["roll_number"],
                     email=spec["email"],
-                    password_hash=None,
-                    status="invited",
-                    activation_code_hash=hash_secret(spec["activation_code"]),
+                    password_hash=hash_secret(FIXED_PASSWORD),
+                    status="active",
+                    activation_code_hash=hash_secret(FIXED_ACTIVATION_CODE),
                     locale="en",
                 )
             )
-            print(f"  created: {spec['role']} {spec['email']} (activation code: {spec['activation_code']})")
+            print(f"  created: {spec['role']} {spec['email']} (active, password: {FIXED_PASSWORD})")
 
         await db.flush()
 
@@ -270,7 +264,10 @@ async def seed() -> None:
         await _seed_dip_subject(db, institution)
 
         await db.commit()
-    print(f"Seed complete. Institution slug: {INSTITUTION_SLUG}")
+    print(
+        f"Seed complete. Institution slug: {INSTITUTION_SLUG}. "
+        f"All seeded users: status=active, password={FIXED_PASSWORD}, activation code={FIXED_ACTIVATION_CODE} (local dev only)."
+    )
 
 
 if __name__ == "__main__":

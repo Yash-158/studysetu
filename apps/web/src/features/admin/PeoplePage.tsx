@@ -188,11 +188,7 @@ export function PeoplePage() {
                   key={u.id}
                   user={u}
                   action={
-                    u.status !== 'active' ? (
-                      <Button variant="ghost" onClick={() => onReissue(u.id)}>Reissue code</Button>
-                    ) : (
-                      <Button variant="ghost" onClick={() => onReissue(u.id)}>Reset password</Button>
-                    )
+                    <Button variant="ghost" onClick={() => onReissue(u.id)}>Reissue activation code</Button>
                   }
                 />
               ))}

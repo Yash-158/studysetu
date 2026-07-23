@@ -10,8 +10,14 @@ ai:
   chains:
     # item_bank/session/dialogue/fast_text are NOT listed here - see ai_primary_provider/
     # ai_fallback_provider above and gateway.py's _resolve_dynamic_chain().
-    embeddings: [gemini_embed]
-    ocr:        [gemini, claude]   # dormant until features.ocr
+    embeddings:  [gemini_embed]
+    ocr:         [gemini, claude]   # dormant until features.ocr
+    # M6-remediation Phase 5 (topic-scoped doubt chat, F11 minimal slice): a deliberately static
+    # chain, not added to gateway.py's dynamic primary/fallback comparison set - that set exists
+    # specifically for the item_bank/session/dialogue/fast_text 4-provider prototyping experiment;
+    # a new feature doesn't need to ride along with it. Same provider order as today's effective
+    # dynamic resolution (groq primary, gemini fallback), just fixed in config instead.
+    doubt_quick: [groq, gemini, cerebras, deepseek]
   models:
     # All 4 comparable providers + claude (dormant, excluded from the primary/fallback
     # comparison - same as production leaving ANTHROPIC_API_KEY unconfigured since M4) tuned for
@@ -24,6 +30,15 @@ ai:
     deepseek:    { model: "deepseek-chat", timeout_s: 30, temperature: 0.2 }   # deepseek-chat (general-purpose), never deepseek-reasoner - thinking mode explicitly disabled in apps/api/app/ai/providers/deepseek.py
     claude:      { model: "claude-sonnet-4-6", timeout_s: 40, temperature: 0.3 }
     gemini_embed: { model: "gemini-embedding-001", timeout_s: 10 }
-  cache: { enabled: true, prompt_version: "v1", demo_mode: false }
+  # v2 (M6-remediation Phase 4): prompts/segment.md's "core" kind changed its semantic output
+  # contract (single "explanation" string -> structured "sections" array) - RULES.md #6's whole
+  # reason prompt_version rides in the cache key is exactly this: without the bump, a pre-existing
+  # cached "segment" artifact from before this change would be served as a cache hit (which skips
+  # validation entirely, unlike a fresh generation) and crash the session planner on the missing
+  # 'sections' key - caught live via a real e2e run, not hypothetical. This is global, not
+  # per-task, so item_bank/other prompts also regenerate once on their next call even though their
+  # prompt text didn't change - a one-time, idempotent, harmless cost, matching this knob's only
+  # granularity as documented in CONFIG.md.
+  cache: { enabled: true, prompt_version: "v2", demo_mode: false }
   quotas: { max_concurrent_calls: 4, per_institution_daily_tokens: 2000000 }
   item_bank: { min_items: 12, max_items: 15 }

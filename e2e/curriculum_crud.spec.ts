@@ -108,13 +108,17 @@ test.describe.serial('M3 GATE: Anvi builds and publishes DIP; enrolled Yash sees
     await page.getByRole('button', { name: 'Add assessment placeholder to Frequency Domain' }).click()
     await expect(page.getByText('Assessment: Unit Check 1')).toBeVisible()
 
-    // 1 prerequisite edge: Transforms -> Frequency Filtering
+    // 1 prerequisite edge: Transforms -> Frequency Filtering (M6-remediation: the builder is now
+    // staged - Structure/Prerequisites/Materials/Roster - so each stage's own tab needs a click
+    // before its fields become reachable, same real navigation a teacher now clicks through).
+    await page.getByRole('button', { name: 'Prerequisites', exact: true }).click()
     await page.getByLabel('Requires (prerequisite)').selectOption({ label: 'Transforms' })
     await page.getByLabel('…is needed before').selectOption({ label: 'Frequency Filtering' })
     await page.getByRole('button', { name: 'Add link' }).click()
     await expect(page.getByText('Transforms → Frequency Filtering')).toBeVisible()
 
     // 1 PDF material
+    await page.getByRole('button', { name: 'Materials', exact: true }).click()
     await page.getByLabel('Title', { exact: true }).fill('DIP Syllabus')
     await page.setInputFiles('#material_file', {
       name: 'syllabus.pdf',
@@ -127,6 +131,7 @@ test.describe.serial('M3 GATE: Anvi builds and publishes DIP; enrolled Yash sees
     await expect(page.getByText('DIP Syllabus (pdf)').locator('..')).not.toContainText('stored only')
 
     // A draft chapter added AFTER the others, deliberately left unpublished - Yash must never see it.
+    await page.getByRole('button', { name: 'Structure', exact: true }).click()
     await page.getByLabel('New chapter title').fill('Advanced Topics DRAFT')
     await page.getByRole('button', { name: 'Add chapter' }).click()
 
@@ -137,6 +142,7 @@ test.describe.serial('M3 GATE: Anvi builds and publishes DIP; enrolled Yash sees
     await expect(page.getByLabel('Publish Frequency Domain')).toHaveCount(0)
 
     // Attach CSE-3A pool so Yash (already a member, seeded) gets enrolled
+    await page.getByRole('button', { name: 'Roster', exact: true }).click()
     await page.getByLabel('Pick a pool').selectOption({ label: 'CSE-3A' })
     await page.getByRole('button', { name: 'Attach pool' }).click()
   })

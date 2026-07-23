@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -329,15 +330,43 @@ async def _grounding_material_text(db: AsyncSession, topic: Topic) -> str:
     return "\n\n".join((m.extracted_text or "") for m in materials)[:6000]
 
 
+# "core" section headings must read naturally (prompts/segment.md's own instruction) - this is a
+# mechanical backstop, not a substitute for the prompt: a heading that's (after stripping leading
+# numbering/punctuation) exactly one of these generic process labels triggers the gateway's
+# same-provider parse retry, same as any other malformed-shape failure.
+_CORE_FORBIDDEN_HEADINGS = {
+    "definition", "definitions", "example", "examples", "explanation", "plain explanation",
+    "plain language explanation", "plain-language explanation", "layman explanation",
+    "layman's explanation", "technical explanation", "worked example", "worked examples",
+}
+
+
+def _normalize_heading(heading: str) -> str:
+    return re.sub(r"^[\d.\-:)\s]+", "", heading.strip().lower()).rstrip(":").strip()
+
+
 def _validate_segment_shape(kind: str):
     def _validate(parsed: dict) -> None:
-        if kind in ("core", "revision"):
+        if kind == "core":
+            sections = parsed.get("sections")
+            if not isinstance(sections, list) or not (3 <= len(sections) <= 5):
+                raise ValueError("core segment needs 3-5 'sections'")
+            for section in sections:
+                if not isinstance(section, dict):
+                    raise ValueError("each core section must be an object")
+                heading, body = section.get("heading"), section.get("body")
+                if not isinstance(heading, str) or not heading.strip():
+                    raise ValueError("each core section needs a non-empty 'heading'")
+                if not isinstance(body, str) or not body.strip():
+                    raise ValueError("each core section needs a non-empty 'body'")
+                if _normalize_heading(heading) in _CORE_FORBIDDEN_HEADINGS:
+                    raise ValueError(f"core section heading reads like a process label, not a natural heading: {heading!r}")
+            we = parsed.get("worked_example")
+            if not isinstance(we, dict) or not isinstance(we.get("steps"), list) or not we["steps"]:
+                raise ValueError("core segment missing 'worked_example.steps'")
+        elif kind == "revision":
             if not isinstance(parsed.get("explanation"), str) or not parsed["explanation"].strip():
-                raise ValueError(f"{kind} segment missing 'explanation'")
-            if kind == "core":
-                we = parsed.get("worked_example")
-                if not isinstance(we, dict) or not isinstance(we.get("steps"), list) or not we["steps"]:
-                    raise ValueError("core segment missing 'worked_example.steps'")
+                raise ValueError("revision segment missing 'explanation'")
         elif kind in ("contrast", "cheatsheet"):
             if not isinstance(parsed.get("text"), str) or not parsed["text"].strip():
                 raise ValueError(f"{kind} segment missing 'text'")
@@ -495,7 +524,7 @@ async def _build_plan(db: AsyncSession, student: User, topic: Topic, diagnostic:
         injected.append({"topic_id": prereq.id, "topic_title": prereq.title})
 
     core_content = await _generate_segment(db, topic, "core", scope="segment_shared", artifact_type="segment")
-    cards.append({"type": "explanation", "topic_id": str(topic.id), "text": core_content["explanation"]})
+    cards.append({"type": "explanation", "topic_id": str(topic.id), "sections": core_content["sections"]})
     cards.append({"type": "worked_example", "steps": core_content["worked_example"]["steps"]})
 
     practice_items = await _draw_practice_items(db, topic.id, set(diagnostic.item_ids))
@@ -527,10 +556,12 @@ async def _build_plan(db: AsyncSession, student: User, topic: Topic, diagnostic:
 
 async def _session_out(db: AsyncSession, session: LearningSession) -> dict:
     """resume_index: derived from attempts, never a separately-tracked cursor (same
-    derive-don't-track style as the diagnostic's own completed-count check) - the index of the
-    first practice/revision card with an unanswered item, or just past the LAST practice-bearing
-    card if every practice item is already answered (so trailing read-only cards like
-    summary/cheatsheet still show on resume, rather than being skipped past).
+    derive-don't-track style as the diagnostic's own completed-count check). A session with ZERO
+    attempts so far always opens at card 0 (bridge -> lesson -> worked example, in full, before any
+    practice) - only once at least one practice/revision item has been answered does resume_index
+    become "the first practice/revision card with an unanswered item, or just past the LAST
+    practice-bearing card if every practice item is already answered" (so trailing read-only cards
+    like summary/cheatsheet still show on resume, rather than being skipped past).
     ponytail: non-practice "seen" state isn't tracked at all - re-showing a bridge/explanation/
     summary card on resume is harmless (it's stored/cached, free, no data loss); only practice
     progress (real graded state) must never be lost or re-asked, and that IS tracked, via attempts."""
@@ -547,18 +578,28 @@ async def _session_out(db: AsyncSession, session: LearningSession) -> dict:
             ).scalars().all()
         )
 
-    resume_index = (practice_card_indices[-1] + 1) if practice_card_indices else 0
-    for i in practice_card_indices:
-        card = cards[i]
-        if card["type"] == "practice":
-            if uuid.UUID(card["item_id"]) not in answered_item_ids:
-                resume_index = i
-                break
-        else:
-            unanswered = [p for p in card.get("practice_items", []) if uuid.UUID(p["item_id"]) not in answered_item_ids]
-            if unanswered:
-                resume_index = i
-                break
+    # A genuinely fresh session (nothing answered yet) must always open at card 0 - the bridge,
+    # then the real lesson content (explanation/worked_example), THEN the first practice/revision
+    # card. Without this guard, the loop below finds the first practice-bearing card with an
+    # unanswered item, which is ALWAYS true on a brand-new session (nothing is answered), so it
+    # silently skipped straight past the bridge/explanation/worked_example on every student's very
+    # first view whenever no revision was injected - the real root cause behind "the session only
+    # ever shows a cheat sheet" (found live while verifying Phase 4's new lesson content, not
+    # something Phase 4 introduced - this bug predates it, back to M5's original session player).
+    resume_index = 0
+    if answered_item_ids:
+        resume_index = (practice_card_indices[-1] + 1) if practice_card_indices else 0
+        for i in practice_card_indices:
+            card = cards[i]
+            if card["type"] == "practice":
+                if uuid.UUID(card["item_id"]) not in answered_item_ids:
+                    resume_index = i
+                    break
+            else:
+                unanswered = [p for p in card.get("practice_items", []) if uuid.UUID(p["item_id"]) not in answered_item_ids]
+                if unanswered:
+                    resume_index = i
+                    break
 
     return {
         "session_id": str(session.id), "topic_id": str(session.topic_id), "status": session.status,

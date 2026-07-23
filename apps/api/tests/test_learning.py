@@ -321,7 +321,14 @@ async def _run_and_complete_diagnostic(client: AsyncClient, student_token: str, 
 
 def _mock_segment(kind: str, misconception_title: str | None = None) -> ProviderResult:
     if kind == "core":
-        content = {"explanation": "Core explanation text.", "worked_example": {"steps": ["Step 1", "Step 2"]}}
+        content = {
+            "sections": [
+                {"heading": "How this idea actually works", "body": "Core explanation text one."},
+                {"heading": "Seeing it play out", "body": "Core explanation text two."},
+                {"heading": "The formal picture", "body": "Core explanation text three."},
+            ],
+            "worked_example": {"steps": ["Step 1", "Step 2"]},
+        }
     elif kind == "revision":
         content = {"explanation": "Revision refresher text."}
     elif kind == "contrast":
@@ -476,6 +483,32 @@ async def test_abandoned_session_is_resumable_without_reasking_answered_items(cl
         headers=_auth(student_token),
     )
     assert replay.status_code == 400
+
+
+async def test_fresh_session_opens_at_the_bridge_not_the_first_practice_card(client: AsyncClient, monkeypatch):
+    """Regression test (found live while verifying Phase 4's new lesson content, predates it -
+    real bug in M5's original session player): a brand-new session (zero attempts) has an empty
+    answered_item_ids set, so the OLD resume_index logic's "find the first practice-bearing card
+    with something unanswered" was ALWAYS true immediately, silently skipping the bridge/
+    explanation/worked_example on every student's very first view whenever no revision was
+    injected (this topic has no prereq edges, so none is). Confirmed non-vacuous: reverting the
+    fix (removing the `if answered_item_ids:` guard) makes this fail red - resume_index becomes the
+    first practice card's index instead of 0."""
+    slug = await _create_institution()
+    _, teacher_token = await _user(client, slug, "teacher")
+    student_id, student_token = await _user(client, slug, "student")
+    subject_id, _, topic_id = await _build_published_topic(client, teacher_token)
+    await _enroll(subject_id, student_id)
+    await _generate_and_approve(client, teacher_token, topic_id, monkeypatch, n=12)
+    await _run_and_complete_diagnostic(client, student_token, topic_id, option_index=0)
+
+    monkeypatch.setattr(groq_provider, "invoke", _fake_segment_invoke)
+    session = (await client.post(f"/api/learning/topics/{topic_id}/session/start", headers=_auth(student_token))).json()
+
+    practice_card_indices = [i for i, c in enumerate(session["cards"]) if c["type"] in ("practice", "revision")]
+    assert practice_card_indices[0] > 0, "test is only meaningful if the first practice card isn't already at index 0"
+    assert session["resume_index"] == 0
+    assert session["cards"][0]["type"] == "bridge"
 
 
 async def test_segment_cache_hits_for_a_second_weak_student_verified_by_ai_invocations_counts(client: AsyncClient, monkeypatch):

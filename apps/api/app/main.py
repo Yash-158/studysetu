@@ -4,9 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.modules import analytics as analytics_module
 from app.modules import assessment as assessment_module
 from app.modules import auth as auth_module
 from app.modules import curriculum as curriculum_module
+from app.modules import doubts as doubts_module
 from app.modules import institutions as institutions_module
 from app.modules import learning as learning_module
 from app.modules import mastery as mastery_module
@@ -42,11 +44,15 @@ def create_app() -> FastAPI:
     app.include_router(learning_module.router)
     app.include_router(mastery_module.router)
     app.include_router(timeline_module.router)
+    app.include_router(analytics_module.router)
+    app.include_router(doubts_module.router)
     # M5 mounts session-planner routes onto app.modules.learning.router (this module's diagnostic
     # surface is real as of M4 - the earlier comment here saying "TODO(M5)" was stale, see MEMORY.md)
-    # TODO(M6): mount app.modules.analytics.router
+    # M6-remediation Phase 5: doubts.router is real now, but only its minimal topic-scoped-ask slice
+    # (see app/modules/doubts.py's module docstring) - the full M8 doubt/RAG feature (embedding
+    # topic-matching, root-gap walk, Socratic streaming) is still future work, not done by this mount.
     # TODO(M7): mount app.modules.assignments.router
-    # TODO(M8): mount app.modules.doubts.router, app.modules.explore.router
+    # TODO(M8): mount app.modules.explore.router; extend app.modules.doubts.router with RAG matching
     return app
 
 app = create_app()

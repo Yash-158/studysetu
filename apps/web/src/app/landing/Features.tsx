@@ -18,20 +18,22 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features">
-      <p className="landing-section-eyebrow">Features</p>
-      <h2 className="landing-section-title">Built around one idea: teach the gap</h2>
-      <p className="landing-section-lead">
-        Not another content library. StudySetu figures out what a specific student needs, grounded in the teacher's own materials.
-      </p>
-      <div className="landing-card-grid">
-        {FEATURES.map((f) => (
-          <div className="landing-card" key={f.title}>
-            <div className="landing-card-icon" aria-hidden="true">{f.icon}</div>
-            <h3>{f.title}</h3>
-            <p>{f.body}</p>
-          </div>
-        ))}
+    <section id="features" className="landing-section-alt">
+      <div className="landing-container">
+        <p className="landing-section-eyebrow">Features</p>
+        <h2 className="landing-section-title">Built around one idea: teach the gap</h2>
+        <p className="landing-section-lead">
+          Not another content library. StudySetu figures out what a specific student needs, grounded in the teacher's own materials.
+        </p>
+        <div className="landing-card-grid">
+          {FEATURES.map((f) => (
+            <div className="landing-card" key={f.title}>
+              <div className="landing-card-icon" aria-hidden="true">{f.icon}</div>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

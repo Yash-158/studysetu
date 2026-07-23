@@ -54,10 +54,11 @@ export const getDiagnosticReview = (diagnosticId: string) =>
 
 // M5: session planner + player (FEATURE_EXPLANATION F8/F9, S16 recipe cards).
 export type PracticeItemRef = { item_id: string; topic_id: string; stem: string; options: SafeOption[] }
+export type LessonSection = { heading: string; body: string }
 export type SessionCard =
   | { type: 'bridge'; text: string }
   | { type: 'revision'; topic_id: string; topic_title: string; explanation: string; practice_items: PracticeItemRef[] }
-  | { type: 'explanation'; topic_id: string; text: string }
+  | { type: 'explanation'; topic_id: string; sections: LessonSection[] }
   | { type: 'worked_example'; steps: string[] }
   | { type: 'practice'; item_id: string; topic_id: string; stem: string; options: SafeOption[] }
   | { type: 'contrast'; misconception_title: string; text: string }
@@ -77,3 +78,9 @@ export const answerPractice = (sessionId: string, itemId: string, optionId: stri
 
 export const completeSession = (sessionId: string) =>
   apiFetch(`/api/learning/sessions/${sessionId}/complete`, { method: 'POST' }).then((r) => unwrap<{ session_id: string; status: string }>(r))
+
+// M6-remediation Phase 5: topic-scoped doubt chat (F11 minimal slice, modules/doubts.py).
+export type DoubtAnswer = { doubt_id: string; answer: string }
+
+export const askDoubt = (sessionId: string, question: string) =>
+  apiFetch(`/api/doubts/sessions/${sessionId}/ask`, { method: 'POST', ...json({ question }) }).then((r) => unwrap<DoubtAnswer>(r))

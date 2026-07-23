@@ -11,19 +11,19 @@ export function Footer({ orgName }: { orgName?: string }) {
           </p>
         </div>
         <div>
-          <h4>Product</h4>
+          <h3>Product</h3>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#pricing">Pricing</a>
         </div>
         <div>
-          <h4>Company</h4>
+          <h3>Company</h3>
           <a href="#about">About</a>
           <a href="#testimonials">Testimonials</a>
           <a href="#faq">FAQ</a>
         </div>
         <div>
-          <h4>Contact</h4>
+          <h3>Contact</h3>
           <a href="mailto:hello@studysetu.example">hello@studysetu.example</a>
         </div>
       </div>
