@@ -32,35 +32,42 @@ Students log in with their roll number (not an email); teacher and admin log in 
 
 **"StudySetu hai to mumkin hai"** — a short look at a student's diagnostic result turning into a personalized revision session.
 
-▶ **[Watch it live](https://studysetu.caffeineclause.tech/#top)** — the video plays (muted, looping) in the landing page hero. GitHub doesn't render autoplaying video well inside a README, so this links to the live site instead of embedding the file.
-
-<!-- Once apps/web/public/media/hero-video.mp4 is committed and deployed, the raw file is also
-     reachable directly and can be linked or embedded here, e.g.:
-     [Download the raw video](https://studysetu.caffeineclause.tech/media/hero-video.mp4) -->
+▶ **[Watch it live](https://studysetu.caffeineclause.tech/#top)** — the video plays (muted, looping) in the landing page hero. GitHub doesn't render autoplaying video well inside a README, so this links to the live site instead of embedding the file. The raw file is also reachable directly: [studysetu.caffeineclause.tech/media/hero-video.mp4](https://studysetu.caffeineclause.tech/media/hero-video.mp4).
 
 ### Screenshots
 
-Screenshot files live in [`docs/screenshots/`](docs/screenshots/). Add the following filenames there to populate this section:
+**Admin**
 
-| Screen | File |
-|---|---|
-| Landing page hero | `docs/screenshots/landing-page-hero.png` |
-| Teacher dashboard | `docs/screenshots/teacher-dashboard.png` |
-| Teacher curriculum builder | `docs/screenshots/teacher-curriculum-builder.png` |
-| Student diagnostic | `docs/screenshots/student-diagnostic.png` |
-| Student lesson | `docs/screenshots/student-lesson.png` |
-| Student doubt chat | `docs/screenshots/student-doubt-chat.png` |
-| Admin analytics | `docs/screenshots/admin-analytics.png` |
+![Adding an account or importing a roster by CSV, from the institution admin's People tab](docs/screenshots/admin-dashboard.png)
+*Adding a teacher or student account directly, or importing a full roster by CSV, from the institution admin's People tab.*
 
-<!--
-![Landing page hero](docs/screenshots/landing-page-hero.png)
-![Teacher dashboard](docs/screenshots/teacher-dashboard.png)
-![Teacher curriculum builder](docs/screenshots/teacher-curriculum-builder.png)
-![Student diagnostic](docs/screenshots/student-diagnostic.png)
-![Student lesson](docs/screenshots/student-lesson.png)
-![Student doubt chat](docs/screenshots/student-doubt-chat.png)
-![Admin analytics](docs/screenshots/admin-analytics.png)
--->
+![Pool management, showing the CSE-3A pool and its 9 members](docs/screenshots/admin-pool.png)
+*Pool management — the CSE-3A cohort and its 9 members, each individually removable from the pool.*
+
+**Teacher**
+
+![The teacher's subject list, with Digital Image Processing published](docs/screenshots/teacher-dashboard.png)
+*A teacher's subject list — creating a new subject, and Digital Image Processing already published.*
+
+![The curriculum builder, showing chapters, ordered topics, and assessment placeholders](docs/screenshots/teacher-curriculum-builder.png)
+*The curriculum builder — chapters as an ordered, reorderable flow of topics and assessment placeholders.*
+
+![Teacher-facing Explorer analytics, showing per-topic average mastery, completion, and misconceptions](<docs/screenshots/student-diagnostic (teacher dashbaord).png>)
+*Explorer analytics (teacher view) — per-topic average mastery, completion, and top misconceptions, drilling down to the student list.*
+
+**Student**
+
+![A student's subject view, showing Digital Image Processing's chapters and topics](docs/screenshots/student-dashboard.png)
+*A student's subject view — Digital Image Processing's chapters and topics, ready to open.*
+
+![The five-question diagnostic probe in progress, with a question-by-question progress bar](docs/screenshots/student-diagnostic-quiz.png)
+*The five-question diagnostic probe in progress — a real Digital Image Processing question with a live progress bar.*
+
+![End-of-probe review, showing the chosen and correct answers plus stored reasoning](docs/screenshots/student-diagnostic-reasoning.png)
+*End-of-probe review, shown immediately after question five — the chosen answer, the correct one, and the stored reasoning for each question.*
+
+![A personalized lesson card with its worked formula, and the doubt chat box beneath it](docs/screenshots/student-personalized-lesson.png)
+*A personalized lesson card with its worked formula, and the topic-scoped doubt chat box right beneath it.*
 
 ## Features
 

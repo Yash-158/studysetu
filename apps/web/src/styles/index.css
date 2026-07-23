@@ -192,8 +192,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
    default to it too instead of getting its own, larger size). --logo-size-footer drives only the
    landing page footer's brand column, which has real vertical room for a more prominent mark. */
 :root {
-  --logo-size-nav: 56px;
-  --logo-size-footer: 96px;
+  --logo-size-nav: 100px;
+  --logo-size-footer: 100px;
 }
 
 /* Real logo.png is a 3000x3000 square (checked, not assumed) - height + object-fit:contain keeps
